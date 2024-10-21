@@ -1,15 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
         <meta charset="UTF-8">
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-        <title>Hello World!</title>
+        <meta http-equiv="Content-Security-Policy"
+              content="img-src 'self' data: filesystem:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-eval' https://unpkg.com">
+        <title>Live Desktop Translator</title>
     </head>
+
     <body>
-        <h1>Hello World!</h1>
-        We are using Node.js <span id="node-version"></span>,
-        Chromium <span id="chrome-version"></span>,
-        and Electron <span id="electron-version"></span>.
+        <div style="text-align: center;">
+            <button id="startButton" class="button">Start</button>
+            <button id="stopButton" class="button">Stop</button>
+
+            <br />
+            <br />
+
+            <video width="800" height="450" autoplay></video>
+
+            <hr />
+
+            <button id="videoSelectButton" class="button">Choose a Video Source</button>
+
+            <script src="renderer.js"></script>
+        </div>
     </body>
 </html>
