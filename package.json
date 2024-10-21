@@ -1,0 +1,24 @@
+{
+  "name": "live_desktop_translator",
+  "version": "0.0.1",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "ColinTr",
+  "license": "MIT",
+  "description": "Live capture your screen and replace textual elements with their translations",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ColinTr/LiveDesktopTranslator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ColinTr/LiveDesktopTranslator/issues"
+  },
+  "homepage": "https://github.com/ColinTr/LiveDesktopTranslator#readme",
+  "devDependencies": {
+    "electron": "^33.0.1"
+  }
+}
