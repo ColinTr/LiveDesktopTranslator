@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
       with:
-        ref: electron
+        ref: master
     - uses: actions/setup-node@master
       with:
         node-version: 20.18.0
