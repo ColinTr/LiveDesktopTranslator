@@ -1,7 +1,7 @@
 {
   "name": "live_desktop_translator",
   "version": "0.0.1",
-  "main": "electron_app/main.js",
+  "main": "src/main.js",
   "scripts": {
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",
