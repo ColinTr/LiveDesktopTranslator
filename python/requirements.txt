@@ -1,0 +1,4 @@
+mss==9.0.2
+numpy==2.1.2
+websockets==13.1
+opencv-contrib-python-headless==4.10.0.84

@@ -20,7 +20,29 @@ ToDo
 
 ## ⚙️ Installation
 
-ToDo
+### 1. Electron
+
+
+### 2. Python
+
+Download [Python 3.13.0](https://www.python.org/downloads/release/python-3130/) (don't forget to add it to the PATH during install).
+
+```bash
+cd python
+
+# Create the empty virtual environment
+py -3.13 -m venv ldtvenv
+
+# Activate the virtual environment
+# On windows:
+  .\ldtvenv\Scripts\activate
+# On linux:
+  source ldtvenv/bin/activate
+  
+# Install the needed packages
+pip install -r requirements.txt
+```
+
 
 
 ## ⚖️ License
