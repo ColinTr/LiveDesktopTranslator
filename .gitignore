@@ -21,3 +21,4 @@ yarn-error.log*
 node_modules/
 
 python/ldtvenv/
+python/textbox_model/
