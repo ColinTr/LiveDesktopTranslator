@@ -1,7 +1,7 @@
 from translation import Translator
 from capture import ScreenCapture
 from ipc import WebSocketServer
-from ocr import OCRProcessor
+from ocr_classes import OCRProcessor
 import asyncio
 
 

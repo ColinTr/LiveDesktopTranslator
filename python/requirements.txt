@@ -3,4 +3,5 @@ numpy==2.1.2
 websockets==13.1
 opencv-contrib-python-headless==4.10.0.84
 Pillow==11.0.0
-pytesseract==0.3.13
+easyocr==1.7.2
+transformers==4.46.0
