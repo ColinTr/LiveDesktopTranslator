@@ -22,6 +22,9 @@ ToDo
 
 ### 1. Electron
 
+To start the electron app while displaying chromium's internal logs, use:
+> electron-forge start --enable-logging
+
 
 ### 2. Python
 
