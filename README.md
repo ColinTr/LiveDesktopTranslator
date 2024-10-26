@@ -22,8 +22,19 @@ ToDo
 
 ### 1. Electron
 
-To start the electron app while displaying chromium's internal logs, use:
-> electron-forge start --enable-logging
+```bash
+# Install the required packages
+npm install
+
+# Launch the Electron app
+npm start
+```
+
+If you also want to display chromium's internal logs, launch the Electron app with:
+
+```bash
+electron-forge start --enable-logging
+```
 
 
 ### 2. Python
@@ -35,6 +46,7 @@ cd python
 
 # Create the empty virtual environment
 py -3.12 -m venv ldtvenv
+
 # Activate the virtual environment
 # On windows:
   .\ldtvenv\Scripts\activate
