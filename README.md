@@ -23,6 +23,8 @@ ToDo
 ### 1. Electron
 
 ```bash
+cd electron_gui
+
 # Install the required packages
 npm install
 
@@ -33,6 +35,7 @@ npm start
 If you also want to display chromium's internal logs, launch the Electron app with:
 
 ```bash
+cd electron_gui
 electron-forge start --enable-logging
 ```
 
@@ -42,7 +45,7 @@ electron-forge start --enable-logging
 Download [Python 3.12.7](https://www.python.org/downloads/release/python-3127/) (don't forget to add it to the PATH during install).
 
 ```bash
-cd python
+cd python_server
 
 # Create the empty virtual environment
 py -3.12 -m venv ldtvenv
@@ -60,6 +63,12 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
 
+To bundle the Python application and its dependencies into a single executable that can be run by the user without installing Python, we use [PyInstaller](https://pyinstaller.org/en/stable/).
+
+```bash
+cd python_server
+pyinstaller --onefile server.py
+```
 
 
 ## ⚖️ License

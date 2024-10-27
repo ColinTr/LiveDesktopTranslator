@@ -18,7 +18,11 @@ yarn-debug.log*
 yarn-error.log*
 
 .idea
-node_modules/
 
-python/ldtvenv/
-python/textbox_model/
+# Electron gui files
+electron_gui/node_modules/
+
+# Python server files
+python_server/ldtvenv/
+python_server/textbox_model/
+python_server/models/
