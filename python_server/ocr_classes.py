@@ -18,7 +18,7 @@ class EasyOCR:
         :param image:
         :return:
         """
-        return self.reader.readtext(image, paragraph=True)
+        return self.reader.readtext(image, paragraph=False)
 
 
 class DBNetOCR:
@@ -43,9 +43,9 @@ class TrOCR:
     def __init__(self, language):
         """
         https://huggingface.co/docs/transformers/en/model_doc/trocr
-        # /!\ Seems extremely popular  (Downloads last month = 1,386,528) /!\
-        # /!\ THIS MODEL DOES NOT PRODUCE BOUNDING BOXES /!\
-        # /!\ It is meant to recognize text from a **single text line** /!\
+        # !!! Seems extremely popular  (Downloads last month = 1,386,528)
+        # !!! THIS MODEL DOES NOT PRODUCE BOUNDING BOXES
+        # !!! It is meant to recognize text from a **single text line**
         :param language:
         """
         self.language = language

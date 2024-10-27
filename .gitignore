@@ -21,8 +21,11 @@ yarn-error.log*
 
 # Electron gui files
 electron_gui/node_modules/
+electron_gui/out/
 
 # Python server files
 python_server/ldtvenv/
 python_server/textbox_model/
 python_server/models/
+python_server/build/
+python_server/dist/
