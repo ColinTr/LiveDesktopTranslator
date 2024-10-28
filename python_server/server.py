@@ -9,7 +9,7 @@ params = {
     "fullscreen_capture": None,
     "monitor_source": None,
     "window_position": {"x": None, "y": None, "width": None, "height": None},
-    "fps": 0.1,
+    "fps": 1,
     "input_lang": None,
     "output_lang": None,
     "is_running": False  # Control flag to start/stop the translation process
@@ -18,7 +18,6 @@ params = {
 async def loop_process(websocket):
     while True:
         if params["is_running"]:
-            logging.error('hello')
             translation_object = {"blabla": {"x": 100, "y": 100}}
 
             await websocket.send(json.dumps(translation_object))

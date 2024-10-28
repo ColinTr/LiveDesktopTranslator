@@ -97,8 +97,6 @@ screenPickerModalCloseButton.addEventListener('click', async () => {
 });
 
 startButton.addEventListener('click', () => {
-    console.log("Not implemented yet.")
-
     // ToDo
     // Prevent starting if no source is selected
     // if (!selectedSourceId) {

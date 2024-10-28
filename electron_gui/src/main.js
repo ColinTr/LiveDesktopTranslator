@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, session, Menu } = require('electron')
 const path = require('node:path')
 
+let controlMenuWindow = null;
+let overlayWindow = null;
 let ws_client = null;
 let pythonServer = null;
 
@@ -15,7 +17,7 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
         ws_client = new WebSocket('ws://localhost:' + port);
 
         ws_client.on('open', () => {
-            ws_client.send(JSON.stringify({ type: "connection_test", fps: "10" }));
+            ws_client.send(JSON.stringify({ type: "connection_test", fps: "1" }));
         });
         ws_client.on('message', (event) => {
             console.log(`Received message from Python: ${event}`);
@@ -60,9 +62,9 @@ portfinder.getPortPromise().then(port => {
     console.error(`Error during port acquisition: ${err}`);
 });
 
-function createWindow() {
-    const win = new BrowserWindow({
-        width: 500 + 300,
+function createControlMenuWindow() {
+    controlMenuWindow = new BrowserWindow({
+        width: 500 + 500,
         height: 500,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -71,17 +73,31 @@ function createWindow() {
             nodeIntegration: false,
         }
     });
-
-    win.loadFile(path.join(__dirname, 'control_menu.html'));
-
-    win.removeMenu();
+    controlMenuWindow.loadFile(path.join(__dirname, 'control_menu.html'));
+    controlMenuWindow.removeMenu();
 
     // ToDo : remove before deploying
-    win.webContents.openDevTools();
+    controlMenuWindow.webContents.openDevTools();
+}
+
+function createOverlayWindow() {
+    // Create the overlay window as a child of the main window
+    overlayWindow = new BrowserWindow({
+        parent: controlMenuWindow,      // Makes this window a child of the main window
+        transparent: true,       // Transparent background
+        frame: false,            // No window frame
+        alwaysOnTop: true,       // Keeps it above other windows
+        fullscreen: true,        // Makes it full screen (optional, or set specific dimensions)
+        resizable: false,
+        skipTaskbar: true,       // Hides it from the taskbar
+    });
+    overlayWindow.loadFile(path.join(__dirname, 'overlay.html'));
+    // Set overlay window to ignore all mouse events, making it click-through
+    overlayWindow.setIgnoreMouseEvents(true);
 }
 
 app.whenReady().then(() => {
-    createWindow();
+    createControlMenuWindow();
 
     ipcMain.handle('DESKTOP_CAPTURER_GET_SOURCES', async () => {
         // ['window', 'screen']
@@ -114,16 +130,29 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle('START_BUTTON_PRESS', async () => {
-        ws_client.send(JSON.stringify({ command: "start" }));
+        if (overlayWindow != null) {
+            console.log('ALREADY RUNNING')
+            // ToDo : display error to user
+        } else {
+            ws_client.send(JSON.stringify({ command: "start" }));
+            createOverlayWindow();
+        }
     });
 
     ipcMain.handle('STOP_BUTTON_PRESS', async () => {
-        ws_client.send(JSON.stringify({ command: "stop" }));
+        if (overlayWindow == null) {
+            console.log('CANNOT CLOSE, NOT RUNNING')
+            // ToDo : display error to user
+        } else {
+            overlayWindow.close();
+            overlayWindow = null;
+            ws_client.send(JSON.stringify({ command: "stop" }));
+        }
     });
 });
 
 app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createControlMenuWindow()
 });
 
 app.on('window-all-closed', () => {
