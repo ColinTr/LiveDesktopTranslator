@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Overlay</title>
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+                background: rgba(255, 255, 255, 0.3); /* Semi-transparent overlay */
+            }
+            #text-container {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+            }
+            .text-element {
+                position: absolute;
+                font-size: 16px;
+                color: black;
+            }
+        </style>
+
+        <script defer src="overlay_renderer.js"></script>
+    </head>
+    <body>
+        <div id="text-container"></div>
+    </body>
+</html>

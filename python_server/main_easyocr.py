@@ -16,7 +16,6 @@ if __name__ == "__main__":
     easy_ocr_reader = EasyOCR('en')
 
     with mss.mss() as sct:
-
         np_screenshot = capture_screen(sct,
                                        top = 0, left = 0,
                                        width = 1920, height = 1080,

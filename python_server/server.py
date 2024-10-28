@@ -2,30 +2,55 @@ import websockets
 import asyncio
 import logging
 import json
+import mss
 import sys
+
+from capture import capture_screen
+from ocr_classes import *
 
 # The parameters that can be adjusted by the client
 params = {
     "fullscreen_capture": None,
     "monitor_source": None,
     "window_position": {"x": None, "y": None, "width": None, "height": None},
-    "fps": 1,
+    "fps": 1.0,
     "input_lang": None,
     "output_lang": None,
     "is_running": False  # Control flag to start/stop the translation process
 }
 
 async def loop_process(websocket):
-    while True:
-        if params["is_running"]:
-            translation_object = {"blabla": {"x": 100, "y": 100}}
+    easy_ocr_reader = EasyOCR('en')
 
-            await websocket.send(json.dumps(translation_object))
+    with mss.mss() as sct:
+        while True:
+            if params["is_running"]:
+                np_screenshot = capture_screen(sct,
+                                               top = 0, left = 0,
+                                               width = 1920, height = 1080,
+                                               monitor_number = 1)
 
-            await asyncio.sleep(1 / params["fps"])
-        else:
-            # If not capturing, wait a bit before checking again
-            await asyncio.sleep(0.1)
+                res = easy_ocr_reader.extract_text(np_screenshot)
+
+                detected_text = []
+                for word_data in res:
+                    ((top_left, top_right, bottom_right, bottom_left), word, confidence) = word_data
+                    detected_text.append({"text": word, "position": {"x": int(top_left[0]), "y": int(top_left[1])}})
+
+                # example_translation_object = {
+                #     "translation_to_plot": [
+                #         {"text": "text_1", "position": {"x": 10, "y": 20}},
+                #         {"text": "text_2", "position": {"x": 30, "y": 50}}
+                #     ]
+                # }
+                logging.error(detected_text)
+
+                await websocket.send(json.dumps({"translation_to_plot": detected_text}))
+
+                await asyncio.sleep(1 / params["fps"])
+            else:
+                # If not capturing, wait a bit before checking again
+                await asyncio.sleep(0.1)
 
 async def handle_messages(websocket):
     """Handle incoming messages from the client for parameter updates."""
@@ -47,11 +72,13 @@ async def handle_messages(websocket):
 
             if 'fps' in message_json:
                 received_fps = message_json['fps']
-                if not str.isdigit(received_fps):
-                    await websocket.send(json.dumps({"error": f"fps received is not Integer. Received {received_fps}"}))
-                received_fps = int(received_fps)
-                if received_fps < 1:
-                    await websocket.send(json.dumps({"error": f"fps can't be less than 1. Received {received_fps}"}))
+                try:
+                    received_fps = float(received_fps)
+                except ValueError:
+                    await websocket.send(json.dumps({"error": f"fps received is not a float. Received {received_fps}"}))
+                received_fps = float(received_fps)
+                if received_fps <= 0:
+                    await websocket.send(json.dumps({"error": f"fps can't be <= 0. Received {received_fps}"}))
                 else:
                     params["fps"] = received_fps
                     logging.debug(f"FPS updated to {params['fps']}")

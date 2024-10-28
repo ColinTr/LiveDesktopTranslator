@@ -20,7 +20,12 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
             ws_client.send(JSON.stringify({ type: "connection_test", fps: "1" }));
         });
         ws_client.on('message', (event) => {
-            console.log(`Received message from Python: ${event}`);
+            console.log(`Received message from Python: ${event.toString().substring(0, 100)}`);
+
+            event = JSON.parse(event)
+            if (event.hasOwnProperty("translation_to_plot")) {
+                overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
+            }
         });
 
         ws_client.on('error', (error) => {
@@ -39,7 +44,7 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
 
 // Select port and start server
 portfinder.getPortPromise().then(port => {
-    // port = 8765
+    port = 8765
     console.log('Port selected for Python server: ' + port.toString())
 
     // Spawn the Python WebSocket server executable
@@ -67,13 +72,13 @@ function createControlMenuWindow() {
         width: 500 + 500,
         height: 500,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, 'control_menu', 'control_menu_preload.js'),
             contextIsolation: true,
             enableRemoteModule: false,
             nodeIntegration: false,
         }
     });
-    controlMenuWindow.loadFile(path.join(__dirname, 'control_menu.html'));
+    controlMenuWindow.loadFile(path.join(__dirname, 'control_menu', 'control_menu.html'));
     controlMenuWindow.removeMenu();
 
     // ToDo : remove before deploying
@@ -83,6 +88,9 @@ function createControlMenuWindow() {
 function createOverlayWindow() {
     // Create the overlay window as a child of the main window
     overlayWindow = new BrowserWindow({
+        webPreferences: {
+            preload: path.join(__dirname, 'overlay', 'overlay_preload.js'),
+        },
         parent: controlMenuWindow,      // Makes this window a child of the main window
         transparent: true,       // Transparent background
         frame: false,            // No window frame
@@ -91,9 +99,12 @@ function createOverlayWindow() {
         resizable: false,
         skipTaskbar: true,       // Hides it from the taskbar
     });
-    overlayWindow.loadFile(path.join(__dirname, 'overlay.html'));
+    overlayWindow.loadFile(path.join(__dirname, 'overlay', 'overlay.html'));
     // Set overlay window to ignore all mouse events, making it click-through
     overlayWindow.setIgnoreMouseEvents(true);
+
+    // ToDo : remove before deploying
+    // overlayWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -144,9 +155,9 @@ app.whenReady().then(() => {
             console.log('CANNOT CLOSE, NOT RUNNING')
             // ToDo : display error to user
         } else {
+            ws_client.send(JSON.stringify({ command: "stop" }));
             overlayWindow.close();
             overlayWindow = null;
-            ws_client.send(JSON.stringify({ command: "stop" }));
         }
     });
 });

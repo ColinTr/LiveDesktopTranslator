@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="Content-Security-Policy"
+              content="img-src 'self' data: filesystem:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-eval' https://unpkg.com">
+
+        <title>Live Desktop Translator</title>
+
+        <link rel="stylesheet" href="../bootstrap.min.css">
+        <link rel="stylesheet" href="control_menu.css">
+
+        <script defer src="control_menu_renderer.js"></script>
+    </head>
+
+    <body>
+        <div class="container" style="max-width: 500px">
+
+            <div class="row" style="margin-top: 15px">
+                <h1 class="col text-center">Live Desktop Translator</h1>
+            </div>
+
+            <hr style="width: 100%"/>
+
+            <!-- Screen selection -->
+            <div class="row" style="margin-top: 15px">
+                <div class="col-6 d-flex flex-column align-items-end">
+                    <button id="freeSelectButton" class="btn btn-info">Free select</button>
+                </div>
+                <div class="col-6">
+                    <button id="screenOrWindowButton" class="btn btn-info">Pick screen</button>
+                </div>
+            </div>
+
+            <!-- The screen selection modal -->
+            <div id="screenPickerModal" class="modal">
+                <!-- Modal content -->
+                <div class="modal-content">
+                    <div class="row">
+                        <div class="col">
+                            <h5 class="modal-title">Screen picker</h5>
+                        </div>
+                        <div class="col d-flex flex-column align-items-end">
+                            <button id="screenPickerModalCloseButton" class="btn btn-light btn-sm" style="width: 30px; height: 30px">
+                                <img src="../../assets/xmark-solid.svg" alt="Close" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr style="width: 100%"/>
+
+                    <div id="modalBody">
+                        <div id="thumbnailsContainer" class="row"></div>
+                    </div>
+
+                    <div class="row" style="margin-top: 15px">
+                        <div class="col-6 d-flex flex-column align-items-end">
+                            <button id="selectWindowButton" class="btn btn-success">Select</button>
+                        </div>
+                        <div class="col-6">
+                            <button id="cancelSelectWindowButton" class="btn btn-danger">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maximum FPS field -->
+            <div class="row" style="margin-top: 15px">
+                <div class="col-6 d-flex flex-column align-items-end">
+                    <label class="label" for="max_fps">Maximum FPS:</label>
+                </div>
+                <div class="col-6">
+                    <p class="control">
+                        <input class="input"
+                               id="max_fps"
+                               type="number"
+                               min={0}
+                               placeholder="max fps"
+                               step={1}
+                               value="1"
+                               style="max-width: 100px;"
+                        />
+                    </p>
+                </div>
+            </div>
+
+            <!-- Input language selection -->
+            <!-- https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes -->
+            <div class="row" style="margin-top: 15px">
+                <div class="col-6 d-flex flex-column align-items-end">
+                    <label class="label" for="input_language">Input language :</label>
+                </div>
+                <div class="col-6">
+                    <select id="input_language">
+                        <option value="en" selected>English</option>
+                        <option value="fr">French</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Output language selection -->
+            <!-- https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes -->
+            <div class="row" style="margin-top: 15px">
+                <div class="col-6 d-flex flex-column align-items-end">
+                    <label class="label" for="output_language">Output language :</label>
+                </div>
+                <div class="col-6">
+                    <select id="output_language">
+                        <option value="en">English</option>
+                        <option value="fr" selected>French</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Start and stop buttons -->
+            <div class="row" style="margin-top: 15px">
+                <div class="col-6 d-flex flex-column align-items-end">
+                    <button id="startButton" class="btn btn-success">Start</button>
+                </div>
+                <div class="col-6">
+                    <button id="stopButton" class="btn btn-danger">Stop</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- <video width="800" height="450" autoplay></video> -->
+    </body>
+</html>
