@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, session, Menu } = require('electron')
 const path = require('node:path')
 
-let selectedSourceId = null;  // Store the selected source ID
 let ws_client = null;
 let pythonServer = null;
 
@@ -16,7 +15,7 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
         ws_client = new WebSocket('ws://localhost:' + port);
 
         ws_client.on('open', () => {
-            ws_client.send(JSON.stringify({ type: "connection_test" }));
+            ws_client.send(JSON.stringify({ type: "connection_test", fps: "10" }));
         });
         ws_client.on('message', (event) => {
             console.log(`Received message from Python: ${event}`);
@@ -38,6 +37,7 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
 
 // Select port and start server
 portfinder.getPortPromise().then(port => {
+    // port = 8765
     console.log('Port selected for Python server: ' + port.toString())
 
     // Spawn the Python WebSocket server executable
@@ -83,12 +83,6 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
 
-    // Save the selected source ID when it's chosen from the menu
-    ipcMain.on('select-source', (event, sourceId) => {
-        selectedSourceId = sourceId;  // Update the selected source ID
-        console.log(`Selected source: ${sourceId}`);
-    });
-
     ipcMain.handle('DESKTOP_CAPTURER_GET_SOURCES', async () => {
         // ['window', 'screen']
         const inputSources = await desktopCapturer.getSources({ types: [ 'screen'], fetchWindowIcons: true, thumbnailSize: { width: 500, height: 500 } });
@@ -97,6 +91,34 @@ app.whenReady().then(() => {
             thumbnail: source.thumbnail.toDataURL(),
             name: source.name,
         }));
+    });
+
+    ipcMain.on('select-source', (event, sourceId) => {
+        console.log(`Selected source: ${sourceId}`);
+        ws_client.send(JSON.stringify({ monitor_source: sourceId }));
+    });
+
+    ipcMain.on('fps-update', (event, fpsValue) => {
+        console.log(`Updated FPS value: ${fpsValue}`);
+        ws_client.send(JSON.stringify({ fps: fpsValue }));
+    });
+
+    ipcMain.on('input-lang-update', (event, lang) => {
+        console.log(`Updated input language: ${lang}`);
+        ws_client.send(JSON.stringify({ input_lang: lang }));
+    });
+
+    ipcMain.on('output-lang-update', (event, lang) => {
+        console.log(`Updated output language: ${lang}`);
+        ws_client.send(JSON.stringify({ output_lang: lang }));
+    });
+
+    ipcMain.handle('START_BUTTON_PRESS', async () => {
+        ws_client.send(JSON.stringify({ command: "start" }));
+    });
+
+    ipcMain.handle('STOP_BUTTON_PRESS', async () => {
+        ws_client.send(JSON.stringify({ command: "stop" }));
     });
 });
 

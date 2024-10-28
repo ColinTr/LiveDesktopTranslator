@@ -8,12 +8,27 @@ const screenPickerModalCloseButton = document.getElementById("screenPickerModalC
 const thumbnailsContainer = document.getElementById("thumbnailsContainer");
 const selectWindowButton = document.getElementById("selectWindowButton");
 const cancelSelectWindowButton = document.getElementById("cancelSelectWindowButton");
+const fpsValueField = document.getElementById("max_fps");
+const inputLangField = document.getElementById("input_language");
+const outputLangField = document.getElementById("output_language");
 
 let selectedSourceId = null;
 let activeScreenPickerButton = null;
 
 freeSelectButton.addEventListener('click', async () => {
     console.log("Not implemented yet.")
+});
+
+fpsValueField.addEventListener('change', async (event) => {
+    window.electronAPI.fpsUpdate(event.target.value)
+});
+
+inputLangField.addEventListener('change', async (event) => {
+    window.electronAPI.inputLangUpdate(event.target.value)
+});
+
+outputLangField.addEventListener('change', async (event) => {
+    window.electronAPI.outputLangUpdate(event.target.value)
 });
 
 screenOrWindowButton.addEventListener('click', async () => {
@@ -84,6 +99,7 @@ screenPickerModalCloseButton.addEventListener('click', async () => {
 startButton.addEventListener('click', () => {
     console.log("Not implemented yet.")
 
+    // ToDo
     // Prevent starting if no source is selected
     // if (!selectedSourceId) {
     //     console.log("No source selected!");
@@ -91,6 +107,7 @@ startButton.addEventListener('click', () => {
     //     return;
     // }
 
+    // ToDo
     // navigator.mediaDevices.getDisplayMedia({
     //     audio: false,
     //     video: {
@@ -102,10 +119,12 @@ startButton.addEventListener('click', () => {
     //     video.srcObject = stream
     //     video.onloadedmetadata = (e) => video.play()
     // }).catch(e => console.log(e))
+
+    window.electronAPI.startButtonPress()
 })
 
 stopButton.addEventListener('click', () => {
-    console.log("Not implemented yet.")
-
     // video.pause()
+
+    window.electronAPI.stopButtonPress()
 })
