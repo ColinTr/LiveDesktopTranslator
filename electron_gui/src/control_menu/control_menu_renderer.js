@@ -11,6 +11,11 @@ const cancelSelectWindowButton = document.getElementById("cancelSelectWindowButt
 const fpsValueField = document.getElementById("max_fps");
 const inputLangField = document.getElementById("input_language");
 const outputLangField = document.getElementById("output_language");
+const advancedParametersButton = document.getElementById("advancedParametersButton");
+const advancedParametersModalCloseButton = document.getElementById("advancedParametersModalCloseButton");
+const advancedParametersModal = document.getElementById("advancedParametersModal");
+const flickerScreenShotSwitch = document.getElementById("flickerScreenShotSwitch");
+const flickerDelayValueField = document.getElementById("flicker_delay");
 
 let selectedSourceId = null;
 let activeScreenPickerButton = null;
@@ -29,6 +34,24 @@ inputLangField.addEventListener('change', async (event) => {
 
 outputLangField.addEventListener('change', async (event) => {
     window.electronAPI.outputLangUpdate(event.target.value)
+});
+
+flickerScreenShotSwitch.addEventListener('change', async (event) => {
+    window.electronAPI.onFlickerScreenshotSwitchUpdate(event.target.checked)
+});
+
+flickerDelayValueField.addEventListener('change', async (event) => {
+    window.electronAPI.flickerDelayUpdate(event.target.value)
+});
+
+advancedParametersModalCloseButton.addEventListener('click', async () => {
+    // Open the modal
+    advancedParametersModal.style.display = "none";
+});
+
+advancedParametersButton.addEventListener('click', async () => {
+    // Open the modal
+    advancedParametersModal.style.display = "block";
 });
 
 screenOrWindowButton.addEventListener('click', async () => {

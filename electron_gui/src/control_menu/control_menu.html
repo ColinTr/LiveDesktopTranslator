@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,6 +15,84 @@
     </head>
 
     <body>
+        <!-- The advanced parameters modal -->
+        <div id="advancedParametersModal" class="modal" style="z-index: 1055;">
+            <div class="modal-content">
+                <div class="row">
+                    <div class="col-auto">
+                        <h5 class="modal-title">Advanced parameters</h5>
+                    </div>
+                    <div class="col d-flex flex-column align-items-end" style="padding-left: 0;">
+                        <button id="advancedParametersModalCloseButton" class="btn btn-light btn-sm" style="width: 30px; height: 30px">
+                            <img src="../../assets/xmark-solid.svg" alt="Close" />
+                        </button>
+                    </div>
+                </div>
+
+                <hr style="width: 100%"/>
+
+                <div>
+                    <div class="row" style="margin-top: 15px">
+                        <div class="custom-control custom-switch" title="If the overlay is captured during the screenshot, activate this option. The overlay will hide just before the screenshot, and re-appear after (causing some flicker).">
+                            <input type="checkbox" class="custom-control-input" id="flickerScreenShotSwitch" checked>
+                            <label class="custom-control-label" for="flickerScreenShotSwitch">Flicker before screenshot</label>
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top: 15px">
+                        <div class="col-6 d-flex flex-column align-items-end">
+                            <label class="label" for="flicker_delay">Flicker delay (ms):</label>
+                        </div>
+                        <div class="col-6">
+                            <p class="control">
+                                <input class="input"
+                                       id="flicker_delay"
+                                       type="number"
+                                       min={0}
+                                       placeholder="flicker delay"
+                                       step={1}
+                                       value="5"
+                                       style="max-width: 100px;"
+                                />
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- The screen selection modal -->
+        <div id="screenPickerModal" class="modal" style="z-index: 1055;">
+            <div class="modal-content">
+                <div class="row">
+                    <div class="col-auto">
+                        <h5 class="modal-title">Screen picker</h5>
+                    </div>
+                    <div class="col d-flex flex-column align-items-end" style="padding-left: 0;">
+                        <button id="screenPickerModalCloseButton" class="btn btn-light btn-sm" style="width: 30px; height: 30px">
+                            <img src="../../assets/xmark-solid.svg" alt="Close" />
+                        </button>
+                    </div>
+                </div>
+
+                <hr style="width: 100%"/>
+
+                <div id="modalBody">
+                    <div id="thumbnailsContainer" class="row"></div>
+                </div>
+
+                <div class="row" style="margin-top: 15px">
+                    <div class="col-6 d-flex flex-column align-items-end">
+                        <button id="selectWindowButton" class="btn btn-success">Select</button>
+                    </div>
+                    <div class="col-6">
+                        <button id="cancelSelectWindowButton" class="btn btn-danger">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="container" style="max-width: 500px">
 
             <div class="row" style="margin-top: 15px">
@@ -30,38 +108,6 @@
                 </div>
                 <div class="col-6">
                     <button id="screenOrWindowButton" class="btn btn-info">Pick screen</button>
-                </div>
-            </div>
-
-            <!-- The screen selection modal -->
-            <div id="screenPickerModal" class="modal">
-                <!-- Modal content -->
-                <div class="modal-content">
-                    <div class="row">
-                        <div class="col">
-                            <h5 class="modal-title">Screen picker</h5>
-                        </div>
-                        <div class="col d-flex flex-column align-items-end">
-                            <button id="screenPickerModalCloseButton" class="btn btn-light btn-sm" style="width: 30px; height: 30px">
-                                <img src="../../assets/xmark-solid.svg" alt="Close" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <hr style="width: 100%"/>
-
-                    <div id="modalBody">
-                        <div id="thumbnailsContainer" class="row"></div>
-                    </div>
-
-                    <div class="row" style="margin-top: 15px">
-                        <div class="col-6 d-flex flex-column align-items-end">
-                            <button id="selectWindowButton" class="btn btn-success">Select</button>
-                        </div>
-                        <div class="col-6">
-                            <button id="cancelSelectWindowButton" class="btn btn-danger">Cancel</button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -125,6 +171,12 @@
                 <div class="col-6">
                     <button id="stopButton" class="btn btn-danger">Stop</button>
                 </div>
+            </div>
+
+            <div class="fixed-bottom" style="padding: 5px">
+                <button id="advancedParametersButton" class="btn btn-light btn-sm" style="padding: 4px">
+                    <img src="../../assets/gear-solid.svg" alt="Close" style="width: 20px; height: 20px"/> Advanced parameters
+                </button>
             </div>
 
         </div>

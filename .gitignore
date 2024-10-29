@@ -21,6 +21,7 @@ yarn-error.log*
 
 # Electron gui files
 electron_gui/node_modules/
+electron_gui/assets/server.exe
 electron_gui/out/
 
 # Python server files

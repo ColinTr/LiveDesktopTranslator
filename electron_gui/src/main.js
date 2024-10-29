@@ -6,10 +6,12 @@ let overlayWindow = null;
 let ws_client = null;
 let pythonServer = null;
 
+let flickerDelay = 5;
+
 const WebSocket = require('ws');
 const {spawn} = require("child_process");
 const portfinder = require('portfinder');// Function to connect to WebSocket with retry mechanism
-function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
+function connectWebSocketWithRetry(port, maxRetries = 50, retryDelay = 1000) {
     let attempts = 0;
 
     function tryConnect() {
@@ -24,7 +26,23 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 500) {
 
             event = JSON.parse(event)
             if (event.hasOwnProperty("translation_to_plot")) {
-                overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
+                if (overlayWindow != null) {
+                    overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
+                }
+            }
+
+            if (event.hasOwnProperty("hide_overlay_before_screenshot")) {
+                if (overlayWindow != null) {
+                    overlayWindow.setOpacity(0);
+                    setTimeout(() => {
+                        ws_client.send(JSON.stringify({overlay_hidden_confirmation: 'done' })); // Send confirmation back to Python
+                    }, flickerDelay); // Some delay to allow rendering (in ms)
+                }
+            }
+            if (event.hasOwnProperty("show_overlay_after_screenshot")) {
+                if (overlayWindow != null) {
+                    overlayWindow.setOpacity(1);
+                }
             }
         });
 
@@ -138,6 +156,16 @@ app.whenReady().then(() => {
     ipcMain.on('output-lang-update', (event, lang) => {
         console.log(`Updated output language: ${lang}`);
         ws_client.send(JSON.stringify({ output_lang: lang }));
+    });
+
+    ipcMain.on('flicker-screenshot-update', (event, state) => {
+        console.log(`Updated flicker screenshot state: ${state}`);
+        ws_client.send(JSON.stringify({ flicker_for_screenshot: state }));
+    });
+
+    ipcMain.on('flicker-delay-update', (event, flickerDelayValue) => {
+        console.log(`Updated flicker delay: ${flickerDelayValue}`);
+        flickerDelay = flickerDelayValue
     });
 
     ipcMain.handle('START_BUTTON_PRESS', async () => {

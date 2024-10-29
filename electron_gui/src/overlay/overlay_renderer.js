@@ -8,7 +8,7 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
 
     let textElement;
     translation_to_plot.forEach((text_object, i) => {
-        textElement = document.createElement('div');
+        textElement = document.createElement('span');
         textElement.className = 'text-element';
         textElement.textContent = text_object.text;
         textElement.style.left = `${text_object.position.x}px`;

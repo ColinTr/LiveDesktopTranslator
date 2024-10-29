@@ -10,4 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fpsUpdate: (fpsValue) => ipcRenderer.send('fps-update', fpsValue),
     inputLangUpdate: (lang) => ipcRenderer.send('input-lang-update', lang),
     outputLangUpdate: (lang) => ipcRenderer.send('output-lang-update', lang),
+    onFlickerScreenshotSwitchUpdate: (state) => ipcRenderer.send('flicker-screenshot-update', state),
+    flickerDelayUpdate: (flickerDelayValue) => ipcRenderer.send('flicker-delay-update', flickerDelayValue),
 });

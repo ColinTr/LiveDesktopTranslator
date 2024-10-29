@@ -16,7 +16,9 @@ params = {
     "fps": 1.0,
     "input_lang": None,
     "output_lang": None,
-    "is_running": False  # Control flag to start/stop the translation process
+    "is_running": False,  # Control flag to start/stop the translation process
+    "flicker_for_screenshot": True,
+    "overlay_hidden_confirmation_received": False,
 }
 
 async def loop_process(websocket):
@@ -25,10 +27,22 @@ async def loop_process(websocket):
     with mss.mss() as sct:
         while True:
             if params["is_running"]:
+                if params["flicker_for_screenshot"] is True:
+                    await websocket.send(json.dumps({"hide_overlay_before_screenshot": True}))
+
+                    # Wait for confirmation from Electron:
+                    while params['overlay_hidden_confirmation_received'] is not True:
+                        print("In while...")
+                        await asyncio.sleep(0.001)
+
                 np_screenshot = capture_screen(sct,
                                                top = 0, left = 0,
                                                width = 1920, height = 1080,
                                                monitor_number = 1)
+
+                if params["flicker_for_screenshot"] is True:
+                    await websocket.send(json.dumps({"show_overlay_after_screenshot": True}))
+                    params['overlay_hidden_confirmation_received'] = False
 
                 res = easy_ocr_reader.extract_text(np_screenshot)
 
@@ -59,8 +73,7 @@ async def handle_messages(websocket):
             message_json = json.loads(message)
 
             if message_json.get('type') == 'connection_test':
-                response = {"status": "Connection successfully established!"}
-                await websocket.send(json.dumps(response))  # Send back JSON response
+                await websocket.send(json.dumps({"status": "Connection successfully established!"}))  # Send back JSON response
 
             if 'fullscreen_capture' in message_json:
                 params["fullscreen_capture"] = message_json['fullscreen_capture']
@@ -101,6 +114,13 @@ async def handle_messages(websocket):
             if 'output_lang' in message_json:
                 params["output_lang"] = message_json['output_lang']
                 logging.debug(f"output_lang updated to {params['output_lang']}")
+
+            if 'flicker_for_screenshot' in message_json:
+                params["flicker_for_screenshot"] = bool(message_json['flicker_for_screenshot'])
+                logging.debug(f"flicker_for_screenshot updated to {params['flicker_for_screenshot']}")
+
+            if 'overlay_hidden_confirmation' in message_json:
+                params['overlay_hidden_confirmation_received'] = True
 
             if 'window_position' in message_json:
                 params["window_position"]["x"] = message_json['window_position']['x']
