@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     outputLangUpdate: (lang) => ipcRenderer.send('output-lang-update', lang),
     onFlickerScreenshotSwitchUpdate: (state) => ipcRenderer.send('flicker-screenshot-update', state),
     flickerDelayUpdate: (flickerDelayValue) => ipcRenderer.send('flicker-delay-update', flickerDelayValue),
+    confidenceThresholdUpdate: (confidenceThresholdValue) => ipcRenderer.send('confidence-threshold-update', confidenceThresholdValue),
 });

@@ -8,11 +8,16 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
 
     let textElement;
     translation_to_plot.forEach((text_object, i) => {
+        console.log(text_object.position)
         textElement = document.createElement('span');
         textElement.className = 'text-element';
         textElement.textContent = text_object.text;
-        textElement.style.left = `${text_object.position.x}px`;
-        textElement.style.top = `${text_object.position.y}px`;
+        textElement.style.left = `${text_object.position.top_left_x}px`;
+        textElement.style.top = `${text_object.position.top_left_y}px`;
+        textElement.style.width = `${text_object.position.width}px`;
+        textElement.style.height = `${text_object.position.height}px`;
+
+        textElement.style.fontSize = `${text_object.position.height}px`;
 
         fragment.appendChild(textElement);
     })

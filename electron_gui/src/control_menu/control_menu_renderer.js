@@ -16,6 +16,7 @@ const advancedParametersModalCloseButton = document.getElementById("advancedPara
 const advancedParametersModal = document.getElementById("advancedParametersModal");
 const flickerScreenShotSwitch = document.getElementById("flickerScreenShotSwitch");
 const flickerDelayValueField = document.getElementById("flicker_delay");
+const confidenceThresholdValueField = document.getElementById("confidence_threshold");
 
 let selectedSourceId = null;
 let activeScreenPickerButton = null;
@@ -44,6 +45,10 @@ flickerDelayValueField.addEventListener('change', async (event) => {
     window.electronAPI.flickerDelayUpdate(event.target.value)
 });
 
+confidenceThresholdValueField.addEventListener('change', async (event) => {
+    window.electronAPI.confidenceThresholdUpdate(event.target.value)
+});
+
 advancedParametersModalCloseButton.addEventListener('click', async () => {
     // Open the modal
     advancedParametersModal.style.display = "none";
@@ -63,6 +68,7 @@ screenOrWindowButton.addEventListener('click', async () => {
 
     // Use the exposed API from preload.js to get the sources from the main process
     window.electronAPI.getSources().then(screenSourcesObjects => {
+        let monitor_number = 1;
         screenSourcesObjects.forEach(source => {
             const col = document.createElement('div');
             col.className = 'col-12 col-md-6 d-flex justify-content-center align-items-center'; // Two buttons per row on medium and larger screens
@@ -73,6 +79,8 @@ screenOrWindowButton.addEventListener('click', async () => {
             button.className = 'btn btn-light'; // Use Bootstrap button styling
             button.id = 'screen-picker-button';
             button.selected_screen_id = source.id;
+            button.monitor_number = monitor_number
+            monitor_number = monitor_number + 1
 
             // Create the image element
             const img = document.createElement('img');
@@ -107,7 +115,7 @@ screenOrWindowButton.addEventListener('click', async () => {
 });
 
 selectWindowButton.addEventListener('click', async () => {
-    window.electronAPI.selectSource(activeScreenPickerButton.selected_screen_id)  // Send the selected screen id to the main process
+    window.electronAPI.selectSource(activeScreenPickerButton.monitor_number)  // Send the selected screen id to the main process
     screenPickerModal.style.display = "none";
 });
 
@@ -127,19 +135,6 @@ startButton.addEventListener('click', () => {
     //     alert("Please select a source first!");
     //     return;
     // }
-
-    // ToDo
-    // navigator.mediaDevices.getDisplayMedia({
-    //     audio: false,
-    //     video: {
-    //         width: 800,
-    //         height: 450,
-    //         frameRate: 30
-    //     }
-    // }).then(stream => {
-    //     video.srcObject = stream
-    //     video.onloadedmetadata = (e) => video.play()
-    // }).catch(e => console.log(e))
 
     window.electronAPI.startButtonPress()
 })

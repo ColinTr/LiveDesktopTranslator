@@ -10,14 +10,15 @@ from ocr_classes import *
 
 # The parameters that can be adjusted by the client
 params = {
-    "fullscreen_capture": None,
-    "monitor_source": None,
+    "fullscreen_capture": True,
+    "monitor_number": 1,
     "window_position": {"x": None, "y": None, "width": None, "height": None},
     "fps": 1.0,
+    "confidence_threshold": 0.1,
     "input_lang": None,
     "output_lang": None,
     "is_running": False,  # Control flag to start/stop the translation process
-    "flicker_for_screenshot": True,
+    "flicker_for_screenshot": False,
     "overlay_hidden_confirmation_received": False,
 }
 
@@ -32,13 +33,9 @@ async def loop_process(websocket):
 
                     # Wait for confirmation from Electron:
                     while params['overlay_hidden_confirmation_received'] is not True:
-                        print("In while...")
                         await asyncio.sleep(0.001)
 
-                np_screenshot = capture_screen(sct,
-                                               top = 0, left = 0,
-                                               width = 1920, height = 1080,
-                                               monitor_number = 1)
+                np_screenshot = capture_screen(sct, params["fullscreen_capture"], params["monitor_number"], params["window_position"])
 
                 if params["flicker_for_screenshot"] is True:
                     await websocket.send(json.dumps({"show_overlay_after_screenshot": True}))
@@ -49,15 +46,14 @@ async def loop_process(websocket):
                 detected_text = []
                 for word_data in res:
                     ((top_left, top_right, bottom_right, bottom_left), word, confidence) = word_data
-                    detected_text.append({"text": word, "position": {"x": int(top_left[0]), "y": int(top_left[1])}})
-
-                # example_translation_object = {
-                #     "translation_to_plot": [
-                #         {"text": "text_1", "position": {"x": 10, "y": 20}},
-                #         {"text": "text_2", "position": {"x": 30, "y": 50}}
-                #     ]
-                # }
-                logging.error(detected_text)
+                    if confidence >= params["confidence_threshold"]:
+                        detected_text.append({"text": word,
+                                              "position": {
+                                                  "top_left_x": int(top_left[0]),
+                                                  "top_left_y": int(top_left[1]),
+                                                  "width": int(bottom_right[0]) - int(top_left[0]),
+                                                  "height": int(bottom_right[1]) - int(top_left[1])
+                                              }})
 
                 await websocket.send(json.dumps({"translation_to_plot": detected_text}))
 
@@ -79,9 +75,9 @@ async def handle_messages(websocket):
                 params["fullscreen_capture"] = message_json['fullscreen_capture']
                 logging.debug(f"fullscreen_capture updated to {params['fullscreen_capture']}")
 
-            if 'monitor_source' in message_json:
-                params["monitor_source"] = message_json['monitor_source']
-                logging.debug(f"monitor_source updated to {params['monitor_source']}")
+            if 'monitor_number' in message_json:
+                params["monitor_number"] = message_json['monitor_number']
+                logging.debug(f"monitor_number updated to {params['monitor_number']}")
 
             if 'fps' in message_json:
                 received_fps = message_json['fps']
@@ -89,12 +85,27 @@ async def handle_messages(websocket):
                     received_fps = float(received_fps)
                 except ValueError:
                     await websocket.send(json.dumps({"error": f"fps received is not a float. Received {received_fps}"}))
-                received_fps = float(received_fps)
+
                 if received_fps <= 0:
                     await websocket.send(json.dumps({"error": f"fps can't be <= 0. Received {received_fps}"}))
                 else:
                     params["fps"] = received_fps
                     logging.debug(f"FPS updated to {params['fps']}")
+
+            if 'confidence_threshold' in message_json:
+                confidence_threshold = message_json['confidence_threshold']
+                try:
+                    confidence_threshold = float(confidence_threshold)
+                except ValueError:
+                    await websocket.send(json.dumps({"error": f"Confidence threshold received is not a float. Received {confidence_threshold}"}))
+
+                if confidence_threshold < 0:
+                    await websocket.send(json.dumps({"error": f"Confidence threshold can't be < 0.0. Received {confidence_threshold}"}))
+                elif confidence_threshold >= 1.0:
+                    await websocket.send(json.dumps({"error": f"Confidence threshold can't be >= 1.0. Received {confidence_threshold}"}))
+                else:
+                    params["confidence_threshold"] = confidence_threshold
+                    logging.debug(f"Confidence threshold updated to {params['confidence_threshold']}")
 
             if 'is_running' in message_json:
                 params["is_running"] = message_json['is_running']
@@ -129,10 +140,16 @@ async def handle_messages(websocket):
                 params["window_position"]["height"] = message_json['window_position']['height']
                 logging.debug(f"window_position updated to {params["window_position"]}")
 
-    except websockets.exceptions.ConnectionClosed as e:
-        logging.debug(f"Client disconnected: {e}")
-        # ToDo : Gracefully stop the app
-        # exit()
+    except Exception as e:
+        logging.error(f"Exception during message reception: {e}")
+    finally:
+        logging.info("Detected client disconnection, stopping the server.")
+
+        for task in asyncio.all_tasks():
+            task.cancel()
+
+        # Stop the event loop to terminate the program
+        asyncio.get_running_loop().stop()
 
 
 async def websocket_handler(websocket, path):
@@ -148,7 +165,6 @@ async def main(ws_port):
     async with websockets.serve(websocket_handler, "localhost", ws_port):
         logging.info(f"WebSocket server listening on ws://localhost:{ws_port}")
         await asyncio.Future()  # Keeps the server running
-
 
 if __name__ == "__main__":
     # ToDo : Use sys.argv to set the logging level

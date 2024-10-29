@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, session, Menu } = require('electron')
+const { app, BrowserWindow, ipcMain, desktopCapturer, screen } = require('electron')
 const path = require('node:path')
 
 let controlMenuWindow = null;
@@ -6,6 +6,7 @@ let overlayWindow = null;
 let ws_client = null;
 let pythonServer = null;
 
+let selectedMonitor = 0;
 let flickerDelay = 5;
 
 const WebSocket = require('ws');
@@ -117,12 +118,25 @@ function createOverlayWindow() {
         resizable: false,
         skipTaskbar: true,       // Hides it from the taskbar
     });
+    moveWindowToMonitor(overlayWindow, selectedMonitor);
     overlayWindow.loadFile(path.join(__dirname, 'overlay', 'overlay.html'));
     // Set overlay window to ignore all mouse events, making it click-through
     overlayWindow.setIgnoreMouseEvents(true);
 
+    // https://www.electronjs.org/docs/latest/api/browser-window/#winsetcontentprotectionenable-macos-windows
+    // For Windows 10 version 2004 and up the window will be removed from capture entirely, older Windows versions behave as if WDA_MONITOR is applied capturing a black window.
+    // So if your Windows version is older than Windows 10 version 2004, please check the "flicker screen" option in advanced options menu.
+    overlayWindow.setContentProtection(true)
+
     // ToDo : remove before deploying
     // overlayWindow.webContents.openDevTools();
+}
+
+// Move the window to the specified monitor index (e.g., 1 for the second monitor)
+function moveWindowToMonitor(window, monitorNumber) {
+    const displays = screen.getAllDisplays();
+    const { x, y, width, height } = displays[monitorNumber].bounds;
+    window.setBounds({ x: x, y: y, width: width, height: height });
 }
 
 app.whenReady().then(() => {
@@ -140,7 +154,12 @@ app.whenReady().then(() => {
 
     ipcMain.on('select-source', (event, sourceId) => {
         console.log(`Selected source: ${sourceId}`);
-        ws_client.send(JSON.stringify({ monitor_source: sourceId }));
+        ws_client.send(JSON.stringify({ monitor_number: sourceId }));
+        selectedMonitor = sourceId - 1  // Python's monitor number start at 1, here at 0
+
+        if (overlayWindow != null) {
+            moveWindowToMonitor(overlayWindow, selectedMonitor);
+        }
     });
 
     ipcMain.on('fps-update', (event, fpsValue) => {
@@ -166,6 +185,11 @@ app.whenReady().then(() => {
     ipcMain.on('flicker-delay-update', (event, flickerDelayValue) => {
         console.log(`Updated flicker delay: ${flickerDelayValue}`);
         flickerDelay = flickerDelayValue
+    });
+
+    ipcMain.on('confidence-threshold-update', (event, confidenceThresholdValue) => {
+        console.log(`Updated confidence threshold: ${confidenceThresholdValue}`);
+        ws_client.send(JSON.stringify({ confidence_threshold: confidenceThresholdValue }));
     });
 
     ipcMain.handle('START_BUTTON_PRESS', async () => {

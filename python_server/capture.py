@@ -4,16 +4,22 @@ import numpy as np
 # screenshot = self.sct.grab(self.region) if self.region else self.sct.grab(self.sct.monitors[1])
 
 
-def capture_screen(sct, top, left, width, height, monitor_number):
-    # The screen part to capture
-    mon = sct.monitors[monitor_number]
-    monitor = {
-        "top": mon["top"] + top,  # 0px from the top
-        "left": mon["left"] + left,  # 0px from the left
-        "width": width,
-        "height": height,
-        "mon": monitor_number,
-    }
+def capture_screen(sct, fullscreen_capture, monitor_number, window_position):
+
+    if fullscreen_capture is True:
+        mon = sct.monitors[monitor_number]
+
+        monitor = {
+            "top": mon["top"],
+            "left": mon["left"],
+            "width": mon["width"],
+            "height": mon["height"],
+            "mon": monitor_number,
+        }
+    else:
+        # mon = sct.monitors[0]
+
+        raise ValueError("Free monitor capture is not implemented yet !")
 
     screenshot = sct.grab(monitor)
 
