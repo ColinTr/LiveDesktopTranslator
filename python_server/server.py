@@ -10,15 +10,16 @@ from ocr_classes import *
 
 # The parameters that can be adjusted by the client
 params = {
-    "fullscreen_capture": True,
+    "input_lang": "en",
+    "output_lang": "fr",
     "monitor_number": 1,
-    "window_position": {"x": None, "y": None, "width": None, "height": None},
     "fps": 1.0,
-    "confidence_threshold": 0.1,
-    "input_lang": None,
-    "output_lang": None,
-    "is_running": False,  # Control flag to start/stop the translation process
     "flicker_for_screenshot": False,
+    "confidence_threshold": 0.1,
+
+    "fullscreen_capture": True,
+    "window_position": {"x": None, "y": None, "width": None, "height": None},
+    "is_running": False,  # Control flag to start/stop the translation process
     "overlay_hidden_confirmation_received": False,
 }
 
@@ -62,83 +63,66 @@ async def loop_process(websocket):
                 # If not capturing, wait a bit before checking again
                 await asyncio.sleep(0.1)
 
+def updateParameters(parameters_config):
+    if 'inputLang' in parameters_config:
+        params["input_lang"] = parameters_config['inputLang']
+    if 'output_lang' in parameters_config:
+        params["outputLang"] = parameters_config['outputLang']
+    if 'selectedMonitor' in parameters_config:
+        params["monitor_number"] = parameters_config['selectedMonitor']
+    if 'maximumFPS' in parameters_config:
+        received_fps = parameters_config['maximumFPS']
+        try:
+            received_fps = float(received_fps)
+        except ValueError:
+            logging.error(f"fps received is not a float. Received {received_fps}")
+        if received_fps <= 0:
+            logging.error(f"fps can't be <= 0. Received {received_fps}")
+        else:
+            params["fps"] = received_fps
+    if 'flickerBeforeScreenshot' in parameters_config:
+        params["flicker_for_screenshot"] = bool(parameters_config['flickerBeforeScreenshot'])
+    if 'confidenceThreshold' in parameters_config:
+        confidence_threshold = parameters_config['confidenceThreshold']
+        try:
+            confidence_threshold = float(confidence_threshold)
+        except ValueError:
+            logging.error(f"Confidence threshold received is not a float. Received {confidence_threshold}")
+        if confidence_threshold < 0:
+            logging.error(f"Confidence threshold can't be < 0.0. Received {confidence_threshold}")
+        elif confidence_threshold >= 1.0:
+            logging.error(f"Confidence threshold can't be >= 1.0. Received {confidence_threshold}")
+        else:
+            params["confidence_threshold"] = confidence_threshold
+
 async def handle_messages(websocket):
     """Handle incoming messages from the client for parameter updates."""
     try:
         async for message in websocket:
             message_json = json.loads(message)
 
-            if message_json.get('type') == 'connection_test':
-                await websocket.send(json.dumps({"status": "Connection successfully established!"}))  # Send back JSON response
+            if 'command' in message_json:
+                if message_json['command'] == 'start':
+                    params["is_running"] = True
+                    logging.debug("Capture process started.")
+                elif message_json['command'] == 'stop':
+                    params["is_running"] = False
+                    logging.debug("Capture process stopped.")
+                elif message_json['command'] == 'connection_test':
+                    await websocket.send(json.dumps({"connection_success": True}))
+                elif message_json['command'] == 'overlay_hidden_confirmation':
+                    params['overlay_hidden_confirmation_received'] = True
 
-            if 'fullscreen_capture' in message_json:
-                params["fullscreen_capture"] = message_json['fullscreen_capture']
-                logging.debug(f"fullscreen_capture updated to {params['fullscreen_capture']}")
+            if 'parameters_config' in message_json:
+                updateParameters(message_json['parameters_config'])
 
-            if 'monitor_number' in message_json:
-                params["monitor_number"] = message_json['monitor_number']
-                logging.debug(f"monitor_number updated to {params['monitor_number']}")
-
-            if 'fps' in message_json:
-                received_fps = message_json['fps']
-                try:
-                    received_fps = float(received_fps)
-                except ValueError:
-                    await websocket.send(json.dumps({"error": f"fps received is not a float. Received {received_fps}"}))
-
-                if received_fps <= 0:
-                    await websocket.send(json.dumps({"error": f"fps can't be <= 0. Received {received_fps}"}))
-                else:
-                    params["fps"] = received_fps
-                    logging.debug(f"FPS updated to {params['fps']}")
-
-            if 'confidence_threshold' in message_json:
-                confidence_threshold = message_json['confidence_threshold']
-                try:
-                    confidence_threshold = float(confidence_threshold)
-                except ValueError:
-                    await websocket.send(json.dumps({"error": f"Confidence threshold received is not a float. Received {confidence_threshold}"}))
-
-                if confidence_threshold < 0:
-                    await websocket.send(json.dumps({"error": f"Confidence threshold can't be < 0.0. Received {confidence_threshold}"}))
-                elif confidence_threshold >= 1.0:
-                    await websocket.send(json.dumps({"error": f"Confidence threshold can't be >= 1.0. Received {confidence_threshold}"}))
-                else:
-                    params["confidence_threshold"] = confidence_threshold
-                    logging.debug(f"Confidence threshold updated to {params['confidence_threshold']}")
-
-            if 'is_running' in message_json:
-                params["is_running"] = message_json['is_running']
-                logging.debug(f"is_running updated to {params['is_running']}")
-
-            if message_json.get("command") == "start":
-                params["is_running"] = True
-                logging.debug("Capture process started.")
-            elif message_json.get("command") == "stop":
-                params["is_running"] = False
-                logging.debug("Capture process stopped.")
-
-            if 'input_lang' in message_json:
-                params["input_lang"] = message_json['input_lang']
-                logging.debug(f"input_lang updated to {params['input_lang']}")
-
-            if 'output_lang' in message_json:
-                params["output_lang"] = message_json['output_lang']
-                logging.debug(f"output_lang updated to {params['output_lang']}")
-
-            if 'flicker_for_screenshot' in message_json:
-                params["flicker_for_screenshot"] = bool(message_json['flicker_for_screenshot'])
-                logging.debug(f"flicker_for_screenshot updated to {params['flicker_for_screenshot']}")
-
-            if 'overlay_hidden_confirmation' in message_json:
-                params['overlay_hidden_confirmation_received'] = True
-
-            if 'window_position' in message_json:
-                params["window_position"]["x"] = message_json['window_position']['x']
-                params["window_position"]["y"] = message_json['window_position']['y']
-                params["window_position"]["width"] = message_json['window_position']['width']
-                params["window_position"]["height"] = message_json['window_position']['height']
-                logging.debug(f"window_position updated to {params["window_position"]}")
+            # ToDo : not implemented yet
+            # if 'window_position' in message_json:
+            #     params["window_position"]["x"] = message_json['window_position']['x']
+            #     params["window_position"]["y"] = message_json['window_position']['y']
+            #     params["window_position"]["width"] = message_json['window_position']['width']
+            #     params["window_position"]["height"] = message_json['window_position']['height']
+            #     logging.debug(f"window_position updated to {params["window_position"]}")
 
     except Exception as e:
         logging.error(f"Exception during message reception: {e}")

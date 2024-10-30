@@ -1,7 +1,5 @@
-const video = document.querySelector('video')
 const startButton = document.getElementById('startButton')
 const stopButton = document.getElementById('stopButton')
-const freeSelectButton = document.getElementById('freeSelectButton')
 const screenOrWindowButton = document.getElementById('screenOrWindowButton')
 const screenPickerModal = document.getElementById("screenPickerModal");
 const screenPickerModalCloseButton = document.getElementById("screenPickerModalCloseButton");
@@ -17,12 +15,33 @@ const advancedParametersModal = document.getElementById("advancedParametersModal
 const flickerScreenShotSwitch = document.getElementById("flickerScreenShotSwitch");
 const flickerDelayValueField = document.getElementById("flicker_delay");
 const confidenceThresholdValueField = document.getElementById("confidence_threshold");
+const screenSelectionRadioWindowed = document.getElementById("screenSelectionRadioWindowed");
+const screenSelectionRadioFullscreen = document.getElementById("screenSelectionRadioFullscreen");
 
-let selectedSourceId = null;
 let activeScreenPickerButton = null;
 
-freeSelectButton.addEventListener('click', async () => {
-    console.log("Not implemented yet.")
+window.electronAPI.onInitializeState((parameters_config) => {
+    // Initialize the state of the interface according the values in main's object "parameters_config"
+    inputLangField.value = parameters_config.inputLang
+    outputLangField.value = parameters_config.outputLang
+    if (parameters_config.windowed_or_fullscreen === "windowed") {
+        screenSelectionRadioWindowed.checked = true
+    } else if (parameters_config.windowed_or_fullscreen === "fullscreen") {
+        screenSelectionRadioFullscreen.checked = true
+    }
+    // parameters_config.selectedMonitor  // This one will be initialized later
+    fpsValueField.value = parameters_config.maximumFPS
+    flickerScreenShotSwitch.checked = parameters_config.flickerBeforeScreenshot
+    flickerDelayValueField.value = parameters_config.flickerDelay
+    confidenceThresholdValueField.value = parameters_config.confidenceThreshold
+});
+
+screenSelectionRadioWindowed.addEventListener('change', async (event) => {
+    window.electronAPI.windowedOrFullscreen("windowed")
+});
+
+screenSelectionRadioFullscreen.addEventListener('change', async (event) => {
+    window.electronAPI.windowedOrFullscreen("fullscreen")
 });
 
 fpsValueField.addEventListener('change', async (event) => {
@@ -116,7 +135,7 @@ screenOrWindowButton.addEventListener('click', async () => {
 
 selectWindowButton.addEventListener('click', async () => {
     window.electronAPI.selectSource(activeScreenPickerButton.monitor_number)  // Send the selected screen id to the main process
-    screenPickerModal.style.display = "none";
+    screenPickerModal.style.display = "none";  // Close the screen selection modal
 });
 
 cancelSelectWindowButton.addEventListener('click', async () => {
