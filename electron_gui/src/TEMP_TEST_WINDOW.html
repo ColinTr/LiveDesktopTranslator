@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transparent Click-Through Window</title>
+    <style>
+        body, html {
+            background: transparent;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Apply pointer-events: none globally to make window click-through */
+        body {
+            pointer-events: none;
+        }
+
+        #border {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid red;
+            pointer-events: auto; /* Prevents interaction with the border */
+        }
+
+        /* Make specific elements clickable by overriding pointer-events */
+        .clickable {
+            pointer-events: auto;
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-align: center;
+            line-height: 50px;
+            cursor: pointer;
+        }
+
+        /* Positioning examples */
+        #button1 { top: 100px; left: 50px; }
+        #button2 { top: 200px; left: 150px; }
+    </style>
+</head>
+<body>
+<div id="border"></div>
+
+<div id="button1" class="clickable" onclick="handleClick('Button 1')">Button 1</div>
+<div id="button2" class="clickable" onclick="handleClick('Button 2')">Button 2</div>
+
+<script>
+    function handleClick(buttonName) {
+        console.log(buttonName + ' clicked!');
+        window.getElementById("border").border = "2px solid blue"
+    }
+</script>
+</body>
+</html>
+
+
+
+
+
+

@@ -12,7 +12,7 @@ let pythonServer = null;
 let parameters_config = {
     inputLang: "en",
     outputLang: "fr",
-    windowed_or_fullscreen: "fullscreen",  // can be either "windowed" or "fullscreen"
+    windowed_or_fullscreen: "windowed",  // can be either "windowed" or "fullscreen"
     selectedMonitor: 1,
     maximumFPS: 1,
     flickerBeforeScreenshot: false,
@@ -20,7 +20,7 @@ let parameters_config = {
     confidenceThreshold: 0.1,
 }
 
-function connectWebSocketWithRetry(port, maxRetries = 50, retryDelay = 1000) {
+function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
     let attempts = 0;
 
     function tryConnect() {
@@ -66,8 +66,6 @@ function connectWebSocketWithRetry(port, maxRetries = 50, retryDelay = 1000) {
             if (attempts < maxRetries) {
                 console.log(`Retrying WebSocket connection... (${attempts}/${maxRetries})`);
                 setTimeout(tryConnect, retryDelay);  // Retry after delay
-
-                console.log(parameters_config)
             } else {
                 console.error("Max retry attempts reached. Could not connect to WebSocket server.");
             }
@@ -82,7 +80,7 @@ portfinder.getPortPromise().then(port => {
     port = 8765
     console.log('Port selected for Python server: ' + port.toString())
 
-    // Spawn the Python WebSocket server executable
+    // ToDo : Spawn the Python WebSocket server executable
     // pythonServer = spawn(path.join(__dirname, '..', 'assets', 'server.exe'), [port.toString()]);
     // pythonServer.stdout.on('data', (data) => {
     //     console.log(`Output from Python: ${data}`);
@@ -97,7 +95,7 @@ portfinder.getPortPromise().then(port => {
     //     console.log(err);
     // });
 
-    connectWebSocketWithRetry(port);  // Attempt to connect to WebSocket server with retry
+    connectWebSocketWithRetry(port);
 }).catch((err) => {
     console.error(`Error during port acquisition: ${err}`);
 });
@@ -125,19 +123,66 @@ function createControlMenuWindow() {
     controlMenuWindow.webContents.openDevTools();
 }
 
+function createTestWindow(){
+    const win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: true,
+        hasShadow: false,
+        frame: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+    });
+    // win.setIgnoreMouseEvents(true, { forward: true }); // Makes the entire window click-through
+    win.loadFile(path.join(__dirname, 'TEMP_TEST_WINDOW.html'));
+
+
+    // Genius code from https://github.com/LZQCN
+    // From https://github.com/electron/electron/issues/1335#issuecomment-1585787243
+    // Why is it needed ?
+    //   -> The window is transparent, and we want to ignore mouse events everywhere BUT some places.
+    setInterval(() => {
+        const point = screen.getCursorScreenPoint();
+        const [x, y] = win.getPosition();
+        const [w, h] = win.getSize();
+
+        if (point.x > x && point.x < x + w && point.y > y && point.y < y + h) {
+            updateIgnoreMouseEvents(point.x - x, point.y - y);
+        }
+    }, 30);  // The shorter the interval, the more reactive, but the heavier on cpu
+    const updateIgnoreMouseEvents = async (x, y) => {
+        // capture 1x1 image of mouse position.
+        const image = await win.webContents.capturePage({
+            x, y,
+            width: 1, height: 1,
+        });
+        const buffer = image.getBitmap();
+
+        // Don't ignore mouse events if the alpha value of the pixel under the mouse is not transparent (i.e. != 0)
+        win.setIgnoreMouseEvents(!buffer[3]);
+        // console.log("setIgnoreMouseEvents", !buffer[3]);
+    };
+}
+
 function createOverlayWindow() {
     // Create the overlay window as a child of the main window
     overlayWindow = new BrowserWindow({
         webPreferences: {
             preload: path.join(__dirname, 'overlay', 'overlay_preload.js'),
         },
-        parent: controlMenuWindow,      // Makes this window a child of the main window
-        transparent: true,       // Transparent background
-        frame: false,            // No window frame
-        alwaysOnTop: true,       // Keeps it above other windows
-        fullscreen: true,        // Makes it full screen (optional, or set specific dimensions)
+        parent: controlMenuWindow,  // Makes this window a child of the main window
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,  // Keeps it above other windows
+        skipTaskbar: true,
+        hasShadow: false,
+
+        fullscreen: true,
         resizable: false,
-        skipTaskbar: true,       // Hides it from the taskbar
     });
     moveWindowToMonitor(overlayWindow, parameters_config.selectedMonitor);
     overlayWindow.loadFile(path.join(__dirname, 'overlay', 'overlay.html'));
@@ -161,6 +206,9 @@ function moveWindowToMonitor(window, monitorNumber) {
 }
 
 app.whenReady().then(() => {
+    createTestWindow()
+
+
     createControlMenuWindow();
 
     ipcMain.handle('DESKTOP_CAPTURER_GET_SOURCES', async () => {

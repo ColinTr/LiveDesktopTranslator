@@ -135,14 +135,12 @@ async def handle_messages(websocket):
         # Stop the event loop to terminate the program
         asyncio.get_running_loop().stop()
 
-
 async def websocket_handler(websocket, path):
     """Run both the capture-and-send and message handler in parallel."""
     await asyncio.gather(
         loop_process(websocket),
         handle_messages(websocket)
     )
-
 
 async def main(ws_port):
     # Start the WebSocket server on localhost:8765
