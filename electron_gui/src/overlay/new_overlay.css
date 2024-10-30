@@ -1,0 +1,75 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: calc(100vw - 1px);
+    height: calc(100vh - 1px);
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid rgba(96, 164, 173, 0.8);
+    background: transparent;
+}
+
+#text-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.text-element {
+    position: absolute;
+    font-size: 16px;
+    color: black;
+}
+
+span {
+    background: rgba(255, 255, 255, 0.6) /* Semi-transparent */
+}
+
+#top_bar {
+    overflow-y: hidden;
+}
+
+.top_bar_row {
+    display: flex;
+    overflow-y: hidden;
+    overflow-x: auto;
+    /*background-color: rgba(65, 234, 212, 0.7) ; */
+    background-color: rgba(96, 164, 173, 0.8);
+    border-radius: 15px;
+    padding: 0 4px 4px 4px; /* top | right | bottom | left */
+    color: black;
+}
+
+.top_bar_button {
+    color: inherit;
+    text-decoration: inherit;
+    cursor: inherit;
+    border: none;
+    padding: 0;
+    width: 70px;
+    height: 70px;
+}
+.top_bar_button img {
+    width: 32px;
+    height: 32px;
+    /* filter: invert(100%); */ /* Change the black svg to white */
+}
+
+.top_bar_button:hover {
+color: inherit;
+text-decoration: inherit;
+cursor: inherit;
+background-color: rgba(1, 22, 39, 0.2) ;
+}
+.top_bar_button:active {
+color: inherit;
+text-decoration: inherit;
+cursor: inherit;
+background-color: rgba(1, 22, 39, 0.4) ;
+}
+.top_bar_button:focus {
+color: inherit;
+text-decoration: inherit;
+cursor: inherit;
+}

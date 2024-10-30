@@ -3,14 +3,15 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Overlay</title>
+        <title>Overlay - Live Desktop Translator</title>
         <style>
             body, html {
                 margin: 0;
                 padding: 0;
-                width: 99.9vw;
-                height: 99.8vh;
+                width: calc(100vw - 1px);
+                height: calc(100vh - 1px);
                 overflow: hidden;
+                box-sizing: border-box;
                 border: 1px solid red;
             }
             #text-container {

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="Content-Security-Policy"
+              content="img-src 'self' data: filesystem:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-eval' https://unpkg.com">
+
+        <title>Overlay - Live Desktop Translator</title>
+
+        <link rel="stylesheet" href="../bootstrap.min.css">
+        <link rel="stylesheet" href="new_overlay.css">
+    </head>
+    <body>
+        <div id="top_bar" class="container d-flex justify-content-center align-items-center">
+            <div class="row flex-row justify-content-center top_bar_row">
+                <div class="col d-flex flex-column align-items-center px-1">
+                    <button id="pauseButton" class="btn btn-link btn-sm top_bar_button">
+                        <img src="../../assets/pause-solid.svg" alt="Pause"/><br />
+                        Pause
+                    </button>
+                </div>
+                <div class="col d-flex flex-column align-items-center px-1">
+                    <button id="stopButton" class="btn btn-link btn-sm top_bar_button">
+                        <img src="../../assets/stop-solid.svg" alt="Stop"/><br />
+                        Stop
+                    </button>
+                </div>
+                <div class="col d-flex flex-column align-items-center px-1">
+                    <button id="saveImgButton" class="btn btn-link btn-sm top_bar_button">
+                        <img src="../../assets/download-solid.svg" alt="Save current translation"/><br />
+                        Save img
+                    </button>
+                </div>
+                <div class="col d-flex flex-column align-items-center px-1">
+                    <button id="windowedButton" class="btn btn-link btn-sm top_bar_button">
+                        <img src="../../assets/compress-solid.svg" alt="Windowed mode"/><br />
+                        Windowed
+                    </button>
+                </div>
+                <div class="col d-flex flex-column align-items-center px-1">
+                    <button id="hideBarButton" class="btn btn-link btn-sm top_bar_button">
+                        <img src="../../assets/chevron-up-solid.svg" alt="Reduce"/><br />
+                        Hide bar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div id="text-container"></div>
+    </body>
+</html>
+
+
+
+
+
+

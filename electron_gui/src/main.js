@@ -106,9 +106,7 @@ function createControlMenuWindow() {
         height: 500,
         webPreferences: {
             preload: path.join(__dirname, 'control_menu', 'control_menu_preload.js'),
-            contextIsolation: true,
             enableRemoteModule: false,
-            nodeIntegration: false,
         }
     });
 
@@ -123,8 +121,13 @@ function createControlMenuWindow() {
     controlMenuWindow.webContents.openDevTools();
 }
 
-function createTestWindow(){
-    const win = new BrowserWindow({
+function createNewOverlayWindow(){
+    const newOverlayWindow = new BrowserWindow({
+        webPreferences: {
+            preload: path.join(__dirname, 'overlay', 'new_overlay_preload.js'),
+            contextIsolation: true,
+        },
+        parent: controlMenuWindow,  // Makes this window a child of the main window
         width: 800,
         height: 600,
         transparent: true,
@@ -132,14 +135,13 @@ function createTestWindow(){
         resizable: true,
         hasShadow: false,
         frame: false,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-        },
     });
-    // win.setIgnoreMouseEvents(true, { forward: true }); // Makes the entire window click-through
-    win.loadFile(path.join(__dirname, 'TEMP_TEST_WINDOW.html'));
+    newOverlayWindow.loadFile(path.join(__dirname, 'overlay', 'new_overlay.html'));
+    // newOverlayWindow.webContents.openDevTools();
 
+    // ToDo : Instead of looking at the alpha value, look for specific coordinates.
+    // ToDo : No need to take screenshots anymore.
+    // ToDo : When the overlay's control bar is hidden/shown, check for different coordinates.
 
     // Genius code from https://github.com/LZQCN
     // From https://github.com/electron/electron/issues/1335#issuecomment-1585787243
@@ -147,8 +149,8 @@ function createTestWindow(){
     //   -> The window is transparent, and we want to ignore mouse events everywhere BUT some places.
     setInterval(() => {
         const point = screen.getCursorScreenPoint();
-        const [x, y] = win.getPosition();
-        const [w, h] = win.getSize();
+        const [x, y] = newOverlayWindow.getPosition();
+        const [w, h] = newOverlayWindow.getSize();
 
         if (point.x > x && point.x < x + w && point.y > y && point.y < y + h) {
             updateIgnoreMouseEvents(point.x - x, point.y - y);
@@ -156,14 +158,14 @@ function createTestWindow(){
     }, 30);  // The shorter the interval, the more reactive, but the heavier on cpu
     const updateIgnoreMouseEvents = async (x, y) => {
         // capture 1x1 image of mouse position.
-        const image = await win.webContents.capturePage({
+        const image = await newOverlayWindow.webContents.capturePage({
             x, y,
             width: 1, height: 1,
         });
         const buffer = image.getBitmap();
 
         // Don't ignore mouse events if the alpha value of the pixel under the mouse is not transparent (i.e. != 0)
-        win.setIgnoreMouseEvents(!buffer[3]);
+        newOverlayWindow.setIgnoreMouseEvents(!buffer[3]);
         // console.log("setIgnoreMouseEvents", !buffer[3]);
     };
 }
@@ -206,8 +208,7 @@ function moveWindowToMonitor(window, monitorNumber) {
 }
 
 app.whenReady().then(() => {
-    createTestWindow()
-
+    createNewOverlayWindow()
 
     createControlMenuWindow();
 
