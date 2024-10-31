@@ -1,30 +1,24 @@
+import mss
 import numpy as np
 
 
 # screenshot = self.sct.grab(self.region) if self.region else self.sct.grab(self.sct.monitors[1])
 
 
-def capture_screen(sct, fullscreen_capture, monitor_number, window_position):
+def capture_screen(sct, window_bounds):
 
-    if fullscreen_capture is True:
-        mon = sct.monitors[monitor_number]
-
-        monitor = {
-            "top": mon["top"],
-            "left": mon["left"],
-            "width": mon["width"],
-            "height": mon["height"],
-            "mon": monitor_number,
-        }
-    else:
-        # mon = sct.monitors[0]
-
-        raise ValueError("Free monitor capture is not implemented yet !")
+    monitor = {
+        "top": window_bounds["y"],
+        "left": window_bounds["x"],
+        "width": window_bounds["width"],
+        "height": window_bounds["height"],
+        "mon": 0,
+    }
 
     screenshot = sct.grab(monitor)
 
     # (optional) Save the picture to a file
-    # mss.tools.to_png(screenshot.rgb, screenshot.size, output=output)
+    # mss.tools.to_png(screenshot.rgb, screenshot.size, output="test.png")
 
     # Convert raw BGRA values to RGB
     # https://python-mss.readthedocs.io/examples.html#bgra-to-rgb

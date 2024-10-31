@@ -4,20 +4,24 @@ const {spawn} = require("child_process");
 const portfinder = require('portfinder');
 const WebSocket = require('ws');
 
-let controlMenuWindow = null;
 let overlayWindow = null;
 let ws_client = null;
 let pythonServer = null;
+let pointerTrackerInterval = null;
 
 let parameters_config = {
     inputLang: "en",
     outputLang: "fr",
-    windowed_or_fullscreen: "windowed",  // can be either "windowed" or "fullscreen"
-    selectedMonitor: 1,
+    window_bounds: null,
     maximumFPS: 1,
     flickerBeforeScreenshot: false,
     flickerDelay: 5,
     confidenceThreshold: 0.1,
+}
+
+function sendParametersConfig() {
+    parameters_config.window_bounds = overlayWindow.getBounds();
+    ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
 }
 
 function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
@@ -37,27 +41,21 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
 
             if (event.hasOwnProperty("connection_success")) {
                 // Send the current configuration of all the parameters
-                ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
+                sendParametersConfig();
             }
 
             if (event.hasOwnProperty("translation_to_plot")) {
-                if (overlayWindow != null) {
-                    overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
-                }
+                overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
             }
 
             if (event.hasOwnProperty("hide_overlay_before_screenshot")) {
-                if (overlayWindow != null) {
-                    overlayWindow.setOpacity(0);
-                    setTimeout(() => {
-                        ws_client.send(JSON.stringify({command: 'overlay_hidden_confirmation' })); // Send confirmation back to Python
-                    }, parameters_config.flickerDelay); // Some delay to allow rendering (in ms)
-                }
+                overlayWindow.setOpacity(0);
+                setTimeout(() => {
+                    ws_client.send(JSON.stringify({command: 'overlay_hidden_confirmation' })); // Send confirmation back to Python
+                }, parameters_config.flickerDelay); // Some delay to allow rendering (in ms)
             }
             if (event.hasOwnProperty("show_overlay_after_screenshot")) {
-                if (overlayWindow != null) {
-                    overlayWindow.setOpacity(1);
-                }
+                overlayWindow.setOpacity(1);
             }
         });
 
@@ -100,44 +98,29 @@ portfinder.getPortPromise().then(port => {
     console.error(`Error during port acquisition: ${err}`);
 });
 
-function createControlMenuWindow() {
-    controlMenuWindow = new BrowserWindow({
-        width: 500 + 500,
-        height: 500,
+function createOverlayWindow(){
+    overlayWindow = new BrowserWindow({
         webPreferences: {
-            preload: path.join(__dirname, 'control_menu', 'control_menu_preload.js'),
-            enableRemoteModule: false,
-        }
-    });
-
-    controlMenuWindow.webContents.once('did-finish-load', () => {
-        controlMenuWindow.webContents.send('initialize-state', parameters_config);
-    });
-
-    controlMenuWindow.loadFile(path.join(__dirname, 'control_menu', 'control_menu.html'));
-    controlMenuWindow.removeMenu();
-
-    // ToDo : remove before deploying
-    controlMenuWindow.webContents.openDevTools();
-}
-
-function createNewOverlayWindow(){
-    const newOverlayWindow = new BrowserWindow({
-        webPreferences: {
-            preload: path.join(__dirname, 'overlay', 'new_overlay_preload.js'),
-            contextIsolation: true,
+            preload: path.join(__dirname, 'overlay_preload.js'),
         },
-        parent: controlMenuWindow,  // Makes this window a child of the main window
         width: 800,
         height: 600,
         transparent: true,
-        alwaysOnTop: true,
-        resizable: true,
-        hasShadow: false,
         frame: false,
+        alwaysOnTop: true,
+        hasShadow: false,
     });
-    newOverlayWindow.loadFile(path.join(__dirname, 'overlay', 'new_overlay.html'));
-    // newOverlayWindow.webContents.openDevTools();
+
+    overlayWindow.webContents.once('did-finish-load', () => {
+        overlayWindow.webContents.send('initialize-state', parameters_config);
+    });
+
+    overlayWindow.loadFile(path.join(__dirname, 'overlay.html'));
+
+    // https://www.electronjs.org/docs/latest/api/browser-window/#winsetcontentprotectionenable-macos-windows
+    // For Windows 10 version 2004 and up the window will be removed from capture entirely, older Windows versions behave as if WDA_MONITOR is applied capturing a black window.
+    // So if your Windows version is older than Windows 10 version 2004, please check the "flicker screen" option in advanced options menu.
+    overlayWindow.setContentProtection(true)
 
     // ToDo : Instead of looking at the alpha value, look for specific coordinates.
     // ToDo : No need to take screenshots anymore.
@@ -147,10 +130,10 @@ function createNewOverlayWindow(){
     // From https://github.com/electron/electron/issues/1335#issuecomment-1585787243
     // Why is it needed ?
     //   -> The window is transparent, and we want to ignore mouse events everywhere BUT some places.
-    setInterval(() => {
+    pointerTrackerInterval = setInterval(() => {
         const point = screen.getCursorScreenPoint();
-        const [x, y] = newOverlayWindow.getPosition();
-        const [w, h] = newOverlayWindow.getSize();
+        const [x, y] = overlayWindow.getPosition();
+        const [w, h] = overlayWindow.getSize();
 
         if (point.x > x && point.x < x + w && point.y > y && point.y < y + h) {
             updateIgnoreMouseEvents(point.x - x, point.y - y);
@@ -158,102 +141,56 @@ function createNewOverlayWindow(){
     }, 30);  // The shorter the interval, the more reactive, but the heavier on cpu
     const updateIgnoreMouseEvents = async (x, y) => {
         // capture 1x1 image of mouse position.
-        const image = await newOverlayWindow.webContents.capturePage({
+        const image = await overlayWindow.webContents.capturePage({
             x, y,
             width: 1, height: 1,
         });
         const buffer = image.getBitmap();
 
         // Don't ignore mouse events if the alpha value of the pixel under the mouse is not transparent (i.e. != 0)
-        newOverlayWindow.setIgnoreMouseEvents(!buffer[3]);
+        overlayWindow.setIgnoreMouseEvents(!buffer[3]);
         // console.log("setIgnoreMouseEvents", !buffer[3]);
     };
-}
 
-function createOverlayWindow() {
-    // Create the overlay window as a child of the main window
-    overlayWindow = new BrowserWindow({
-        webPreferences: {
-            preload: path.join(__dirname, 'overlay', 'overlay_preload.js'),
-        },
-        parent: controlMenuWindow,  // Makes this window a child of the main window
-        transparent: true,
-        frame: false,
-        alwaysOnTop: true,  // Keeps it above other windows
-        skipTaskbar: true,
-        hasShadow: false,
-
-        fullscreen: true,
-        resizable: false,
+    parameters_config.window_bounds = overlayWindow.getBounds();  // Initialize the value
+    const windowShapeUpdateEvents = ["move", "moved", "resized", "maximize", "unmaximize"]
+    windowShapeUpdateEvents.forEach(event => {
+        overlayWindow.on(event, () => {
+            sendParametersConfig();
+        });
     });
-    moveWindowToMonitor(overlayWindow, parameters_config.selectedMonitor);
-    overlayWindow.loadFile(path.join(__dirname, 'overlay', 'overlay.html'));
-    // Set overlay window to ignore all mouse events, making it click-through
-    overlayWindow.setIgnoreMouseEvents(true);
-
-    // https://www.electronjs.org/docs/latest/api/browser-window/#winsetcontentprotectionenable-macos-windows
-    // For Windows 10 version 2004 and up the window will be removed from capture entirely, older Windows versions behave as if WDA_MONITOR is applied capturing a black window.
-    // So if your Windows version is older than Windows 10 version 2004, please check the "flicker screen" option in advanced options menu.
-    overlayWindow.setContentProtection(true)
-
-    // ToDo : remove before deploying
-    // overlayWindow.webContents.openDevTools();
-}
-
-// Move the window to the specified monitor index (e.g., 1 for the second monitor)
-function moveWindowToMonitor(window, monitorNumber) {
-    const displays = screen.getAllDisplays();
-    const { x, y, width, height } = displays[monitorNumber - 1].bounds;  // The monitor number starts at 0 here
-    window.setBounds({ x: x, y: y, width: width, height: height });
 }
 
 app.whenReady().then(() => {
-    createNewOverlayWindow()
+    createOverlayWindow()
 
-    createControlMenuWindow();
-
-    ipcMain.handle('DESKTOP_CAPTURER_GET_SOURCES', async () => {
-        // ['window', 'screen']
-        const inputSources = await desktopCapturer.getSources({ types: [ 'screen'], fetchWindowIcons: true, thumbnailSize: { width: 500, height: 500 } });
-        return inputSources.map(source => ({
-            id: source.id,
-            thumbnail: source.thumbnail.toDataURL(),
-            name: source.name,
-        }));
-    });
-
-    ipcMain.on('select-source', (event, sourceId) => {
-        console.log(`Selected source: ${sourceId}`);
-        parameters_config.selectedMonitor = sourceId
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
-
-        if (overlayWindow != null) {
-            moveWindowToMonitor(overlayWindow, parameters_config.selectedMonitor);
-        }
+    ipcMain.on('set-fullscreen-button', (event, bool) => {
+        overlayWindow.setFullScreen(bool)
+        sendParametersConfig();
     });
 
     ipcMain.on('fps-update', (event, fpsValue) => {
         console.log(`Updated FPS value: ${fpsValue}`);
         parameters_config.maximumFPS = fpsValue
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
+        sendParametersConfig();
     });
 
     ipcMain.on('input-lang-update', (event, lang) => {
         console.log(`Updated input language: ${lang}`);
         parameters_config.inputLang = lang
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
+        sendParametersConfig();
     });
 
     ipcMain.on('output-lang-update', (event, lang) => {
         console.log(`Updated output language: ${lang}`);
         parameters_config.outputLang = lang
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
+        sendParametersConfig();
     });
 
     ipcMain.on('flicker-screenshot-update', (event, state) => {
         console.log(`Updated flicker screenshot state: ${state}`);
         parameters_config.flickerBeforeScreenshot = state
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
+        sendParametersConfig();
     });
 
     ipcMain.on('flicker-delay-update', (event, flickerDelayValue) => {
@@ -265,39 +202,23 @@ app.whenReady().then(() => {
     ipcMain.on('confidence-threshold-update', (event, confidenceThresholdValue) => {
         console.log(`Updated confidence threshold: ${confidenceThresholdValue}`);
         parameters_config.confidenceThreshold = confidenceThresholdValue
-        ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
-    });
-
-    ipcMain.on('windowed-or-fullscreen', (event, value) => {
-        console.log(`Updated windowed-or-fullscreen: ${value}`);
-        parameters_config.windowed_or_fullscreen = value
+        sendParametersConfig();
     });
 
     ipcMain.handle('START_BUTTON_PRESS', async () => {
-        if (overlayWindow != null) {
-            console.log('ALREADY RUNNING')
-            // ToDo : display error to user
-        } else {
-            ws_client.send(JSON.stringify({ command: "start" }));
-            createOverlayWindow();
-        }
+        console.log(`Sending start command...`);
+        ws_client.send(JSON.stringify({ command: "start" }));
     });
 
     ipcMain.handle('STOP_BUTTON_PRESS', async () => {
-        if (overlayWindow == null) {
-            console.log('CANNOT CLOSE, NOT RUNNING')
-            // ToDo : display error to user
-        } else {
-            ws_client.send(JSON.stringify({ command: "stop" }));
-            overlayWindow.close();
-            overlayWindow = null;
-        }
+        console.log(`Sending stop command...`);
+        ws_client.send(JSON.stringify({ command: "stop" }));
     });
 });
 
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createControlMenuWindow()
-});
+// app.on('activate', () => {
+//     if (BrowserWindow.getAllWindows().length === 0) createControlMenuWindow()
+// });
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -312,6 +233,8 @@ app.on('before-quit', () => {
         ws_client.close();
         console.log("WebSocket connection closed.");
     }
+
+    clearInterval(pointerTrackerInterval)
 
     // Terminate the Python process
     if (pythonServer) {

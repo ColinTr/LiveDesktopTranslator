@@ -12,13 +12,11 @@ from ocr_classes import *
 params = {
     "input_lang": "en",
     "output_lang": "fr",
-    "monitor_number": 1,
     "fps": 1.0,
     "flicker_for_screenshot": False,
     "confidence_threshold": 0.1,
 
-    "fullscreen_capture": True,
-    "window_position": {"x": None, "y": None, "width": None, "height": None},
+    "window_bounds": {"x": 0, "y": 0, "width": 100, "height": 100},
     "is_running": False,  # Control flag to start/stop the translation process
     "overlay_hidden_confirmation_received": False,
 }
@@ -36,7 +34,7 @@ async def loop_process(websocket):
                     while params['overlay_hidden_confirmation_received'] is not True:
                         await asyncio.sleep(0.001)
 
-                np_screenshot = capture_screen(sct, params["fullscreen_capture"], params["monitor_number"], params["window_position"])
+                np_screenshot = capture_screen(sct, params["window_bounds"])
 
                 if params["flicker_for_screenshot"] is True:
                     await websocket.send(json.dumps({"show_overlay_after_screenshot": True}))
@@ -64,12 +62,13 @@ async def loop_process(websocket):
                 await asyncio.sleep(0.1)
 
 def updateParameters(parameters_config):
+    if 'window_bounds' in parameters_config:
+        params["window_bounds"] = parameters_config['window_bounds']
+        print(params["window_bounds"])
     if 'inputLang' in parameters_config:
         params["input_lang"] = parameters_config['inputLang']
     if 'output_lang' in parameters_config:
         params["outputLang"] = parameters_config['outputLang']
-    if 'selectedMonitor' in parameters_config:
-        params["monitor_number"] = parameters_config['selectedMonitor']
     if 'maximumFPS' in parameters_config:
         received_fps = parameters_config['maximumFPS']
         try:
@@ -115,14 +114,6 @@ async def handle_messages(websocket):
 
             if 'parameters_config' in message_json:
                 updateParameters(message_json['parameters_config'])
-
-            # ToDo : not implemented yet
-            # if 'window_position' in message_json:
-            #     params["window_position"]["x"] = message_json['window_position']['x']
-            #     params["window_position"]["y"] = message_json['window_position']['y']
-            #     params["window_position"]["width"] = message_json['window_position']['width']
-            #     params["window_position"]["height"] = message_json['window_position']['height']
-            #     logging.debug(f"window_position updated to {params["window_position"]}")
 
     except Exception as e:
         logging.error(f"Exception during message reception: {e}")
