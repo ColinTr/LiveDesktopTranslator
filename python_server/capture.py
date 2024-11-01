@@ -1,12 +1,6 @@
-import mss
 import numpy as np
 
-
-# screenshot = self.sct.grab(self.region) if self.region else self.sct.grab(self.sct.monitors[1])
-
-
 def capture_screen(sct, window_bounds):
-
     monitor = {
         "top": window_bounds["y"],
         "left": window_bounds["x"],

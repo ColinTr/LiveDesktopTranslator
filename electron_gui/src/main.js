@@ -153,7 +153,7 @@ function createOverlayWindow(){
     };
 
     parameters_config.window_bounds = overlayWindow.getBounds();  // Initialize the value
-    const windowShapeUpdateEvents = ["move", "moved", "resized", "maximize", "unmaximize"]
+    const windowShapeUpdateEvents = ["moved", "resized", "maximize", "unmaximize"]  // "move" => Spams too much
     windowShapeUpdateEvents.forEach(event => {
         overlayWindow.on(event, () => {
             sendParametersConfig();

@@ -1,3 +1,5 @@
+from translate import Translator as pythonTranslateLibrary
+import numpy as np
 import websockets
 import asyncio
 import logging
@@ -22,14 +24,32 @@ params = {
 }
 
 async def loop_process(websocket):
-    easy_ocr_reader = EasyOCR('en')
+    current_input_lang = params["input_lang"]
+    easy_ocr_reader = EasyOCR(current_input_lang)
+
+    current_output_lang = params["output_lang"]
+    translator = pythonTranslateLibrary(to_lang=current_output_lang)
+
+    current_screenshot = np.array([0])
+    currently_detected_words = {}
 
     with mss.mss() as sct:
         while True:
             if params["is_running"]:
+                # Reload OCR reader if language has changed
+                if params["input_lang"] != current_input_lang:
+                    current_input_lang = params["input_lang"]
+                    easy_ocr_reader = EasyOCR(current_input_lang)
+                    logging.debug(f"Reloaded EasyOCR with lang: {current_input_lang}")
+
+                # Reload translator if output language changed
+                if params["output_lang"] != current_output_lang:
+                    current_output_lang = params["output_lang"]
+                    translator = pythonTranslateLibrary(to_lang=current_output_lang)
+                    logging.debug(f"Reloaded translator with lang: {current_output_lang}")
+
                 if params["flicker_for_screenshot"] is True:
                     await websocket.send(json.dumps({"hide_overlay_before_screenshot": True}))
-
                     # Wait for confirmation from Electron:
                     while params['overlay_hidden_confirmation_received'] is not True:
                         await asyncio.sleep(0.001)
@@ -40,21 +60,44 @@ async def loop_process(websocket):
                     await websocket.send(json.dumps({"show_overlay_after_screenshot": True}))
                     params['overlay_hidden_confirmation_received'] = False
 
-                res = easy_ocr_reader.extract_text(np_screenshot)
+                # Only update the translation if the detected image changed
+                if current_screenshot.shape != np_screenshot.shape or not (current_screenshot == np_screenshot).all():
+                    current_screenshot = np_screenshot
 
-                detected_text = []
-                for word_data in res:
-                    ((top_left, top_right, bottom_right, bottom_left), word, confidence) = word_data
-                    if confidence >= params["confidence_threshold"]:
-                        detected_text.append({"text": word,
-                                              "position": {
-                                                  "top_left_x": int(top_left[0]),
-                                                  "top_left_y": int(top_left[1]),
-                                                  "width": int(bottom_right[0]) - int(top_left[0]),
-                                                  "height": int(bottom_right[1]) - int(top_left[1])
-                                              }})
+                    res = easy_ocr_reader.extract_text(current_screenshot)
 
-                await websocket.send(json.dumps({"translation_to_plot": detected_text}))
+                    # ToDo : Send translation to the client line by line, instead of all at once
+
+                    detected_text = []
+                    words_in_screenshot = []
+                    for word_data in res:
+                        ((top_left, top_right, bottom_right, bottom_left), word, confidence) = word_data
+
+                        word = str.lower(word)
+
+                        # ToDo : typo correction (e.g. si6ht -> sight, ive -> I've)
+
+                        words_in_screenshot.append(word)
+
+                        if confidence >= params["confidence_threshold"]:
+
+                            # Translate only new words
+                            if word not in currently_detected_words.keys():
+                                currently_detected_words[word] = translator.translate(word)
+
+                            detected_text.append({"text": currently_detected_words[word],
+                                                  "position": {
+                                                      "top_left_x": int(top_left[0]),
+                                                      "top_left_y": int(top_left[1]),
+                                                      "width": int(bottom_right[0]) - int(top_left[0]),
+                                                      "height": int(bottom_right[1]) - int(top_left[1])
+                                                  }})
+
+                    # ToDo : clean the currently_detected_words object
+                    # Maybe we can keep a few words from before in memory even if they are not displayed right now?
+                    # currently_detected_words = {k: v for k, v in currently_detected_words.items() if k in words_in_screenshot}
+
+                    await websocket.send(json.dumps({"translation_to_plot": detected_text}))
 
                 await asyncio.sleep(1 / params["fps"])
             else:
