@@ -4,12 +4,15 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Content-Security-Policy"
-              content="img-src 'self' data: filesystem:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-eval' https://unpkg.com">
+              content="img-src 'self' data: filesystem:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-inline' https://unpkg.com">
 
         <title>Overlay - Live Desktop Translator</title>
 
         <link rel="stylesheet" href="./bootstrap.min.css">
         <link rel="stylesheet" href="overlay.css">
+
+        <script src="../assets/jquery-3.7.1.min.js"></script>
+        <script src="../assets/jquery.textfill.min.js"></script>
 
         <script defer src="overlay_renderer.js"></script>
     </head>
@@ -206,6 +209,6 @@
             </div>
         </div>
 
-        <div id="text-container" style="z-index: 9"></div>
+        <div id="text-container" style="z-index: 0"></div>
     </body>
 </html>

@@ -1,29 +1,40 @@
 const textContainer = document.getElementById('text-container');
+
+window.electronAPI.clearTranslation(() => {
+    console.log("Clearing translation...")
+    textContainer.innerHTML = '';
+})
+
 window.electronAPI.plotTranslation((translation_to_plot) => {
     // ToDo : to optimize updates, we could try to only update the translation_to_plot objects that changed
 
     // Create a document fragment for batching DOM updates
     const fragment = document.createDocumentFragment();
 
-    let textElement;
     translation_to_plot.forEach((text_object, i) => {
-        console.log(text_object.position)
-        textElement = document.createElement('span');
-        textElement.className = 'text-element';
-        textElement.textContent = text_object.text;
-        textElement.style.left = `${text_object.position.top_left_x}px`;
-        textElement.style.top = `${text_object.position.top_left_y}px`;
-        // textElement.style.width = `${text_object.position.width}px`;
-        // textElement.style.height = `${text_object.position.height}px`;
+        const divElement = document.createElement('div');
+        divElement.className = "text-fit-div d-flex align-items-center justify-content-center"
+        divElement.style.position = 'absolute';
+        divElement.style.left = `${text_object.position.top_left_x}px`;
+        divElement.style.top = `${text_object.position.top_left_y}px`;
+        divElement.style.width = `${text_object.position.width}px`;
+        divElement.style.height = `${text_object.position.height}px`;
+
+        const spanElement = document.createElement('span');
+        // spanElement.className = 'd-flex align-items-center justify-content-center';
+        spanElement.textContent = text_object.text;
 
         // textElement.style.fontSize = `${text_object.position.height}px`;
 
-        fragment.appendChild(textElement);
+        divElement.appendChild(spanElement);
+        fragment.appendChild(divElement);
     })
 
     // Clear container and add all elements back to avoid leftover nodes
-    textContainer.innerHTML = '';
     textContainer.appendChild(fragment);
+
+    // Apply textfill to new elements
+    $('.text-fit-div').textfill({ maxFontPixels: 100, changeLineHeight: true });
 })
 
 // =================== Top bar buttons ===================

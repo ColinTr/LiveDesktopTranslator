@@ -19,11 +19,9 @@ body, html {
     padding: 0;
 }
 
-.text-element {
+.text-fit-div {
     position: absolute;
-    font-size: 16px;
-    color: black;
-    background: rgba(255, 255, 255, 0.6) /* Semi-transparent */
+    background: rgba(255, 255, 255, 0.8) /* Semi-transparent */
 }
 
 .collapsible_top_bar {

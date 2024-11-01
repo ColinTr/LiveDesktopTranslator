@@ -44,6 +44,10 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
                 sendParametersConfig();
             }
 
+            if (event.hasOwnProperty("clear_translation")) {
+                overlayWindow.webContents.send("clear-translation")
+            }
+
             if (event.hasOwnProperty("translation_to_plot")) {
                 overlayWindow.webContents.send("plot-translation", event.translation_to_plot)
             }
@@ -191,6 +195,12 @@ app.whenReady().then(() => {
         console.log(`Updated flicker screenshot state: ${state}`);
         parameters_config.flickerBeforeScreenshot = state
         sendParametersConfig();
+
+        if (state === true) {
+            overlayWindow.setContentProtection(false)
+        } else {
+            overlayWindow.setContentProtection(true)
+        }
     });
 
     ipcMain.on('flicker-delay-update', (event, flickerDelayValue) => {

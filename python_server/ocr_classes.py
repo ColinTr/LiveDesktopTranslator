@@ -12,13 +12,14 @@ class EasyOCR:
         self.language = language
         self.reader  = easyocr.Reader([self.language])
 
-    def extract_text(self, image):
+    def extract_text(self, image, paragraph):
         """
         Returns text with coordinates
         :param image:
+        :param paragraph:
         :return:
         """
-        return self.reader.readtext(image, paragraph=False)
+        return self.reader.readtext(image, paragraph=paragraph)
 
 
 class DBNetOCR:
