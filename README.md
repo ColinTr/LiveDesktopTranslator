@@ -70,6 +70,9 @@ py -3.12 -m venv ldtvenv
 # Install pytorch
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
+# Install PaddleOCR
+pip install paddlepaddle-gpu==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+
 # Install the rest of the packages
 pip install -r requirements.txt
 ```

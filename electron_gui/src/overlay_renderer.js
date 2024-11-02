@@ -1,15 +1,20 @@
 const textContainer = document.getElementById('text-container');
 
 window.electronAPI.clearTranslation(() => {
-    console.log("Clearing translation...")
     textContainer.innerHTML = '';
 })
+
+const randomId = function(length) {
+    return Math.random().toString(36).substring(2, length + 2);
+};
 
 window.electronAPI.plotTranslation((translation_to_plot) => {
     // ToDo : to optimize updates, we could try to only update the translation_to_plot objects that changed
 
     // Create a document fragment for batching DOM updates
     const fragment = document.createDocumentFragment();
+
+    let divIds = [];
 
     translation_to_plot.forEach((text_object, i) => {
         const divElement = document.createElement('div');
@@ -19,6 +24,22 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
         divElement.style.top = `${text_object.position.top_left_y}px`;
         divElement.style.width = `${text_object.position.width}px`;
         divElement.style.height = `${text_object.position.height}px`;
+
+        const bg_red = text_object.mean_rgb[0]
+        const bg_green = text_object.mean_rgb[1]
+        const bg_blue = text_object.mean_rgb[2]
+        divElement.style.background = `rgba(${bg_red}, ${bg_green}, ${bg_blue}, 0.9)`;
+
+        // Automatically choose white or black for the text color according to the background color for the best readability
+        if ((bg_red*0.299 + bg_green*0.587 + bg_blue*0.114) > 186) {
+            divElement.style.color = "#000000"
+        }  else {
+            divElement.style.color = "#ffffff"
+        }
+
+        const divId = randomId(10);
+        divElement.id = divId;
+        divIds.push(divId)
 
         const spanElement = document.createElement('span');
         // spanElement.className = 'd-flex align-items-center justify-content-center';
@@ -33,8 +54,11 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
     // Clear container and add all elements back to avoid leftover nodes
     textContainer.appendChild(fragment);
 
-    // Apply textfill to new elements
-    $('.text-fit-div').textfill({ maxFontPixels: 100, changeLineHeight: true });
+    // Apply textfill to the new elements
+    // We don't apply it to the whole "text-fit-div" class, because it will re-apply to existing divElements, causing poor performance
+    Array.from(divIds).forEach((divId) => {
+        $(`#${divId}`).textfill({ maxFontPixels: 100, changeLineHeight: true });
+    })
 })
 
 // =================== Top bar buttons ===================
@@ -75,6 +99,8 @@ fullscreenOrWindowedButton.addEventListener('click', async () => {
     const fullscreenOrWindowedButtonImg = document.getElementById('fullscreenOrWindowedButtonImg');
     const fullscreenOrWindowedButtonText = document.getElementById('fullscreenOrWindowedButtonText');
 
+    // ToDo (optional) : make window borderless and non-draggable in fullscreen
+
     if (fullscreenOrWindowedButtonText.innerText === "Fullscreen") {
         fullscreenOrWindowedButtonText.innerText = "Windowed"
         fullscreenOrWindowedButtonImg.src = "../assets/compress-solid.svg"
@@ -108,7 +134,9 @@ showBarButton.addEventListener('click', async () => {
 
 // =================== Parameters fields ===================
 const inputLangField = document.getElementById("input_language");
+const addInputLangButton = document.getElementById("addInputLangButton");
 const outputLangField = document.getElementById("output_language");
+const addOutputLangButton = document.getElementById("addOutputLangButton");
 const fpsValueField = document.getElementById("max_fps");
 const flickerScreenShotSwitch = document.getElementById("flickerScreenShotSwitch");
 const flickerDelayValueField = document.getElementById("flicker_delay");
@@ -128,8 +156,18 @@ inputLangField.addEventListener('change', async (event) => {
     window.electronAPI.inputLangUpdate(event.target.value)
 });
 
+addInputLangButton.addEventListener('click', async (event) => {
+    // ToDo
+    console.log("Not implemented yet")
+});
+
 outputLangField.addEventListener('change', async (event) => {
     window.electronAPI.outputLangUpdate(event.target.value)
+});
+
+addOutputLangButton.addEventListener('click', async (event) => {
+    // ToDo
+    console.log("Not implemented yet")
 });
 
 fpsValueField.addEventListener('change', async (event) => {

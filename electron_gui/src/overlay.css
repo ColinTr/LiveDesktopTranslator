@@ -21,7 +21,7 @@ body, html {
 
 .text-fit-div {
     position: absolute;
-    background: rgba(255, 255, 255, 0.8) /* Semi-transparent */
+    /* background: rgba(255, 255, 255, 0.8) */ /* Semi-transparent */
 }
 
 .collapsible_top_bar {
@@ -116,4 +116,14 @@ body, html {
     height: auto; /* Height auto to fit content */
     max-width: 90vw; /* Limit modal width to 90% of viewport width */
     max-height: 90vh; /* Limit modal height to 90% of viewport height */
+}
+
+.params-left-column {
+    width: 100px;
+    text-align: right;
+    padding: 0;
+}
+.params-right-column {
+    flex-grow: 1;
+    padding: 0 10px 0 10px; /* top | right | bottom | left */
 }
