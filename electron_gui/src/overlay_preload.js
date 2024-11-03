@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startButtonPress: () => ipcRenderer.invoke('START_BUTTON_PRESS'),
     stopButtonPress: () => ipcRenderer.invoke('STOP_BUTTON_PRESS'),
 
+    offlineOrOnlineTranslationUpdate: (state) => ipcRenderer.send('offline-or-online-translation', state),
     inputLangUpdate: (lang) => ipcRenderer.send('input-lang-update', lang),
     outputLangUpdate: (lang) => ipcRenderer.send('output-lang-update', lang),
     fpsUpdate: (fpsValue) => ipcRenderer.send('fps-update', fpsValue),

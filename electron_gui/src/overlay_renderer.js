@@ -16,7 +16,10 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
 
     let divIds = [];
 
+    console.log(translation_to_plot)
+
     translation_to_plot.forEach((text_object, i) => {
+        console.log(text_object)
         const divElement = document.createElement('div');
         divElement.className = "text-fit-div d-flex align-items-center justify-content-center"
         divElement.style.position = 'absolute';
@@ -52,6 +55,7 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
     })
 
     // Clear container and add all elements back to avoid leftover nodes
+    textContainer.innerHTML = '';
     textContainer.appendChild(fragment);
 
     // Apply textfill to the new elements
@@ -133,23 +137,47 @@ showBarButton.addEventListener('click', async () => {
 });
 
 // =================== Parameters fields ===================
+const offline_translation_radio = document.getElementById("offline_translation_radio");
+const online_translation_radio = document.getElementById("online_translation_radio");
 const inputLangField = document.getElementById("input_language");
 const addInputLangButton = document.getElementById("addInputLangButton");
 const outputLangField = document.getElementById("output_language");
 const addOutputLangButton = document.getElementById("addOutputLangButton");
 const fpsValueField = document.getElementById("max_fps");
 const flickerScreenShotSwitch = document.getElementById("flickerScreenShotSwitch");
+const flickerDelayValueRow = document.getElementById("flicker_delay_row");
 const flickerDelayValueField = document.getElementById("flicker_delay");
 const confidenceThresholdValueField = document.getElementById("confidence_threshold");
 
 window.electronAPI.onInitializeState((parameters_config) => {
     // Initialize the state of the interface according the values in main's object "parameters_config"
-    inputLangField.value = parameters_config.inputLang
-    outputLangField.value = parameters_config.outputLang
+    if (parameters_config.offline_or_online_translation === "offline") {
+        offline_translation_radio.checked = true
+        online_translation_radio.checked = false
+    } else {
+        offline_translation_radio.checked = false
+        online_translation_radio.checked = true
+    }
+    inputLangField.value = parameters_config.input_lang
+    outputLangField.value = parameters_config.output_lang
     fpsValueField.value = parameters_config.maximumFPS
     flickerScreenShotSwitch.checked = parameters_config.flickerBeforeScreenshot
     flickerDelayValueField.value = parameters_config.flickerDelay
     confidenceThresholdValueField.value = parameters_config.confidenceThreshold
+
+    flickerDelayValueRow.hidden = !flickerScreenShotSwitch.checked
+});
+
+offline_translation_radio.addEventListener('change', async (event) => {
+    if (event.target.checked === true) {
+        window.electronAPI.offlineOrOnlineTranslationUpdate("offline")
+    }
+});
+
+online_translation_radio.addEventListener('change', async (event) => {
+    if (event.target.checked === true) {
+        window.electronAPI.offlineOrOnlineTranslationUpdate("online")
+    }
 });
 
 inputLangField.addEventListener('change', async (event) => {
@@ -176,6 +204,7 @@ fpsValueField.addEventListener('change', async (event) => {
 
 flickerScreenShotSwitch.addEventListener('change', async (event) => {
     window.electronAPI.onFlickerScreenshotSwitchUpdate(event.target.checked)
+    flickerDelayValueRow.hidden = !event.target.checked
 });
 
 flickerDelayValueField.addEventListener('change', async (event) => {

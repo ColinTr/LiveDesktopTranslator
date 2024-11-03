@@ -15,6 +15,7 @@ module.exports = {
     }
   ],
   packagerConfig: {
+    icon: '/assets/icon/app_icon_filled',
     extraResource: ['assets'],
     asar: false,
   },

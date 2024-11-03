@@ -8,10 +8,11 @@ import sys
 
 from capture import capture_screen
 from ocr_classes import *
-from translators import *
+from translator import *
 
 # The parameters that can be adjusted by the client
 params = {
+    "offline_or_online_translation": "offline",  # "offline" or "online"
     "input_lang": "en",
     "output_lang": "fr",
     "fps": 1.0,
@@ -23,13 +24,8 @@ params = {
     "overlay_hidden_confirmation_received": False,
 }
 
-def getTranslation(word, saved_translations, translator):
-    # Translate only new words
-    if word not in saved_translations.keys():
-        saved_translations[word] = translator.translate(word)
-    return saved_translations[word]
-
 async def sendTranslation(words_to_plot, positions, np_screenshot, websocket):
+    formated_texts = []
     for word_to_plot, position in zip(words_to_plot, positions):
         (top_left, top_right, bottom_right, bottom_left) = position
         width = int(bottom_right[0]) - int(top_left[0])
@@ -41,7 +37,7 @@ async def sendTranslation(words_to_plot, positions, np_screenshot, websocket):
                           int(top_left[0]):int(top_left[0]) + width]
         mean_rgb = screenshot_zone.reshape(-1, 3).mean(axis=0)
 
-        text_to_plot = [{
+        text_to_plot = {
             "text": word_to_plot,
             "position": {
                 "top_left_x": int(top_left[0]),
@@ -49,47 +45,26 @@ async def sendTranslation(words_to_plot, positions, np_screenshot, websocket):
                 "width": width,
                 "height": height},
             "mean_rgb": mean_rgb.astype(int).tolist()
-        }]
+        }
+        formated_texts.append(text_to_plot)
 
-        await websocket.send(json.dumps({"translation_to_plot": text_to_plot}))
+    await websocket.send(json.dumps({"translation_to_plot": formated_texts}))
 
 async def loop_process(websocket):
-    current_input_lang = params["input_lang"]
-    easy_ocr_reader = EasyOCR(current_input_lang)
-
-    current_output_lang = params["output_lang"]
-
-
-    # Option 1: pythonTranslateLibrary
-    # translator = PythonTranslateLibraryAbstraction(from_lang=current_input_lang, to_lang=current_output_lang)
-
-    # Option 2: ArgosTranslate
-    translator = ArgosTranslatorAbstraction(from_lang=current_input_lang, to_lang=current_output_lang)
+    ocr_reader = EasyOCRReader(params["input_lang"])
+    translator = Translator(params)
 
     current_screenshot = np.array([0])
-    saved_translations = {}
 
     with mss.mss() as sct:
         while True:
+            # Reload OCR reader if input language has changed
+            ocr_reader.updateInputLang(params["input_lang"])
+
+            # If the input/output lang changed, or the translation is now offline/online, update the translator:
+            translator.updateTranslator(params)
+
             if params["is_running"]:
-                need_to_reload_translator = False
-
-                # Reload OCR reader if language has changed
-                if params["input_lang"] != current_input_lang:
-                    current_input_lang = params["input_lang"]
-                    easy_ocr_reader = EasyOCR(current_input_lang)
-                    logging.debug(f"Reloaded EasyOCR with lang: {current_input_lang}")
-                    need_to_reload_translator = True
-
-                # Reload translator if either language changed
-                if params["output_lang"] != current_output_lang:
-                    current_output_lang = params["output_lang"]
-                    need_to_reload_translator = True
-
-                if need_to_reload_translator:
-                    logging.info(f"Updating translator: from_lang={current_input_lang}, to_lang={current_output_lang}")
-                    translator.updateLanguages(from_lang=current_input_lang, to_lang=current_output_lang)
-
                 np_screenshot = await capture_screen(sct, params, websocket)
 
                 # Only update the translation if the detected image changed
@@ -98,38 +73,21 @@ async def loop_process(websocket):
                 if current_screenshot.shape != np_screenshot.shape or not (current_screenshot == np_screenshot).all():
                     current_screenshot = np_screenshot
 
-                    res = easy_ocr_reader.extract_text(current_screenshot, paragraph=True)
+                    res = ocr_reader.extractText(current_screenshot)
 
-                    await websocket.send(json.dumps({"clear_translation": True}))
+                    # await websocket.send(json.dumps({"clear_translation": True}))  # Only needed if we send the translation piece by piece
 
                     if len(res) > 0:
-
                         # ToDo : typo correction (e.g. si6ht -> sight, ive -> I've)
 
-                        detected_words = np.array([str.lower(word) for _, word in res])
+                        detected_words = [str.lower(word) for _, word in res]
                         detected_bounding_boxes = np.array([list(pos) for pos, _ in res])
 
                         # ToDo : Send translation to the client line by line, instead of all at once
 
-                        # ToDo : Translate all the text in one request
+                        detected_words_translation = [translator.translate(w) for w in detected_words]
 
-                        known_words_mask = np.array([(True if word in saved_translations.keys() else False) for word in enumerate(detected_words)])
-
-                        # First plot the words that don't need to be translated
-                        if sum(known_words_mask) > 0:
-                            known_detected_words = detected_words[known_words_mask]
-                            known_detected_words_translated = [getTranslation(word, saved_translations, translator) for word in known_detected_words]
-                            await sendTranslation(known_detected_words_translated, detected_bounding_boxes[known_words_mask], np_screenshot, websocket)
-
-                        # And then translate the new words, and send them
-                        if sum(~known_words_mask) > 0:
-                            unknown_detected_words = detected_words[~known_words_mask]
-                            unknown_detected_words_translated = [getTranslation(word, saved_translations, translator) for word in unknown_detected_words]
-                            await sendTranslation(unknown_detected_words_translated, detected_bounding_boxes[~known_words_mask], np_screenshot, websocket)
-
-                        # ToDo (optional) : clean the saved_translations object
-                        # Maybe we can keep a few words from before in memory even if they are not displayed right now?
-                        # saved_translations = {k: v for k, v in saved_translations.items() if k in words_in_screenshot}
+                        await sendTranslation(detected_words_translation, detected_bounding_boxes, np_screenshot, websocket)
 
                 await asyncio.sleep(1 / params["fps"])
             else:
@@ -139,10 +97,12 @@ async def loop_process(websocket):
 def updateParameters(parameters_config):
     if 'window_bounds' in parameters_config:
         params["window_bounds"] = parameters_config['window_bounds']
-    if 'inputLang' in parameters_config:
-        params["input_lang"] = parameters_config['inputLang']
-    if 'outputLang' in parameters_config:
-        params["output_lang"] = parameters_config['outputLang']
+    if 'offline_or_online_translation' in parameters_config:
+        params["offline_or_online_translation"] = parameters_config['offline_or_online_translation']
+    if 'input_lang' in parameters_config:
+        params["input_lang"] = parameters_config['input_lang']
+    if 'output_lang' in parameters_config:
+        params["output_lang"] = parameters_config['output_lang']
     if 'maximumFPS' in parameters_config:
         received_fps = parameters_config['maximumFPS']
         try:

@@ -10,8 +10,9 @@ let pythonServer = null;
 let pointerTrackerInterval = null;
 
 let parameters_config = {
-    inputLang: "en",
-    outputLang: "fr",
+    offline_or_online_translation: "offline",  // "offline" or "online"
+    input_lang: "en",
+    output_lang: "fr",
     window_bounds: null,
     maximumFPS: 1,
     flickerBeforeScreenshot: false,
@@ -113,6 +114,7 @@ function createOverlayWindow(){
         frame: false,
         alwaysOnTop: true,
         hasShadow: false,
+        icon: path.join(__dirname, '..', 'assets', 'icon', 'app_icon_filled.png'),
     });
 
     overlayWindow.webContents.once('did-finish-load', () => {
@@ -179,15 +181,21 @@ app.whenReady().then(() => {
         sendParametersConfig();
     });
 
+    ipcMain.on('offline-or-online-translation', (event, state) => {
+        console.log(`Updated translation state: ${state}`);
+        parameters_config.offline_or_online_translation = state
+        sendParametersConfig();
+    });
+
     ipcMain.on('input-lang-update', (event, lang) => {
         console.log(`Updated input language: ${lang}`);
-        parameters_config.inputLang = lang
+        parameters_config.input_lang = lang
         sendParametersConfig();
     });
 
     ipcMain.on('output-lang-update', (event, lang) => {
         console.log(`Updated output language: ${lang}`);
-        parameters_config.outputLang = lang
+        parameters_config.output_lang = lang
         sendParametersConfig();
     });
 
