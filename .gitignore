@@ -25,8 +25,7 @@ electron_gui/assets/server.exe
 electron_gui/out/
 
 # Python server files
-python_server/ldtvenv/
-python_server/textbox_model/
-python_server/models/
 python_server/build/
 python_server/dist/
+python_server/external_projects/
+python_server/ldtvenv/

@@ -68,10 +68,9 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
 // =================== Top bar buttons ===================
 const collapsible_top_bar_elements_list = Array.from(document.getElementsByClassName('collapsible_top_bar'));
 const startStopButton = document.getElementById('startStopButton');
-//const pauseButton = document.getElementById('pauseButton');
 const fullscreenOrWindowedButton = document.getElementById('fullscreenOrWindowedButton');
 const optionsButton = document.getElementById('optionsButton');
-const parametersModal = document.getElementById('parametersModal');
+const parametersModal = document.getElementById("parametersModal");
 const parametersModalCloseButton = document.getElementById('parametersModalCloseButton');
 const hideBarButton = document.getElementById('hideBarButton');
 const closeButton = document.getElementById('closeButton');
@@ -116,12 +115,25 @@ fullscreenOrWindowedButton.addEventListener('click', async () => {
     }
 });
 
+parametersModal.addEventListener('click', e => {
+    // Close modal on outside click
+    const dialogDimensions = parametersModal.getBoundingClientRect()
+    if (
+        e.clientX < dialogDimensions.left ||
+        e.clientX > dialogDimensions.right ||
+        e.clientY < dialogDimensions.top ||
+        e.clientY > dialogDimensions.bottom
+    ) {
+        parametersModal.close()
+    }
+})
+
 optionsButton.addEventListener('click', async () => {
-    parametersModal.style.display = "flex"
+    parametersModal.showModal()
 });
 
 parametersModalCloseButton.addEventListener('click', async () => {
-    parametersModal.style.display = "none";
+    parametersModal.close()
 });
 
 hideBarButton.addEventListener('click', async () => {

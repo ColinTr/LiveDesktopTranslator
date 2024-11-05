@@ -92,30 +92,12 @@ body, html {
     -webkit-app-region: drag;
 }
 
-.modal {
-    display: none; /* Hidden by default */
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
-}
-
-/* Modal Content/Box */
-.modal-content {
+#parametersModal {
     background-color: #fefefe;
     padding: 20px; /* Padding around the content */
     border: 1px solid #888;
-    display: flex; /* Use flexbox for layout */
-    flex-direction: column; /* Stack children vertically */
-    width: auto; /* Width auto to fit content */
-    height: auto; /* Height auto to fit content */
-    max-width: 90vw; /* Limit modal width to 90% of viewport width */
-    max-height: 90vh; /* Limit modal height to 90% of viewport height */
+    border-radius: 5px;
+    flex-direction: column;
 }
 
 .params-left-column {
