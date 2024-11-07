@@ -8,6 +8,33 @@ const randomId = function(length) {
     return Math.random().toString(36).substring(2, length + 2);
 };
 
+window.electronAPI.plotBoundingBoxes((bounding_boxes_to_plot) => {
+    // bounding_boxes_to_plot = JSON.parse(bounding_boxes_to_plot)
+    const fragment = document.createDocumentFragment();
+
+    bounding_boxes_to_plot.forEach(bounding_box => {
+        const divElement = document.createElement('div');
+        divElement.className = "text-fit-div d-flex align-items-center justify-content-center"
+        divElement.style.position = 'absolute';
+        divElement.style.left = `${bounding_box.box.x1}px`;
+        divElement.style.top = `${bounding_box.box.y1}px`;
+        divElement.style.width = `${bounding_box.box.x2 - bounding_box.box.x1}px`;
+        divElement.style.height = `${bounding_box.box.y2 - bounding_box.box.y1}px`;
+        divElement.style.border = "1px solid red"
+
+
+        const labelDiv = document.createElement('span');
+        labelDiv.className = "bounding_box_label"
+        labelDiv.textContent = bounding_box.label;
+        divElement.appendChild(labelDiv)
+
+        fragment.appendChild(divElement);
+    });
+
+    textContainer.innerHTML = '';
+    textContainer.appendChild(fragment);
+});
+
 window.electronAPI.plotTranslation((translation_to_plot) => {
     // ToDo : to optimize updates, we could try to only update the translation_to_plot objects that changed
 
@@ -16,17 +43,14 @@ window.electronAPI.plotTranslation((translation_to_plot) => {
 
     let divIds = [];
 
-    console.log(translation_to_plot)
-
     translation_to_plot.forEach((text_object, i) => {
-        console.log(text_object)
         const divElement = document.createElement('div');
-        divElement.className = "text-fit-div d-flex align-items-center justify-content-center"
+        divElement.className = "text-fit-div d-flex align-items-center"
         divElement.style.position = 'absolute';
-        divElement.style.left = `${text_object.position.top_left_x}px`;
-        divElement.style.top = `${text_object.position.top_left_y}px`;
-        divElement.style.width = `${text_object.position.width}px`;
-        divElement.style.height = `${text_object.position.height}px`;
+        divElement.style.left = `${text_object.box.x1}px`;
+        divElement.style.top = `${text_object.box.y1}px`;
+        divElement.style.width = `${text_object.box.x2 - text_object.box.x1}px`;
+        divElement.style.height = `${text_object.box.y2 - text_object.box.y1}px`;
 
         const bg_red = text_object.mean_rgb[0]
         const bg_green = text_object.mean_rgb[1]

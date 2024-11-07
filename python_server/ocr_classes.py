@@ -1,11 +1,11 @@
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 import cv2.text as cvt
 # import pytesseract
 import easyocr
 import logging
 
 
-class AbstractOCRReader:
+class AbstractOCRReader(metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, input_lang):
         pass
@@ -26,8 +26,8 @@ class EasyOCRReader(AbstractOCRReader):
         self.input_lang = input_lang
         self.reader  = easyocr.Reader([self.input_lang])
 
-    def extractText(self, image):
-        return self.reader.readtext(image, paragraph=True)
+    def extractText(self, image, paragraph=True):
+        return self.reader.readtext(image, paragraph=paragraph)
 
     def updateInputLang(self, input_lang):
         if input_lang != self.input_lang:

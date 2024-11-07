@@ -1,7 +1,7 @@
+from PIL import Image
 import numpy as np
 import websockets
 import asyncio
-import logging
 import json
 import mss
 import sys
@@ -9,6 +9,15 @@ import sys
 from capture import capture_screen
 from ocr_classes import *
 from translator import *
+
+from surya.model.detection.model import load_model as load_det_model, load_processor as load_det_processor
+from surya.model.recognition.processor import load_processor as load_rec_processor
+from surya.model.recognition.model import load_model as load_rec_model
+from surya.model.detection.model import load_model, load_processor
+from surya.detection import batch_text_detection
+from surya.layout import batch_layout_detection
+from surya.settings import settings
+from surya.ocr import run_ocr
 
 # The parameters that can be adjusted by the client
 params = {
@@ -24,33 +33,12 @@ params = {
     "overlay_hidden_confirmation_received": False,
 }
 
-async def sendTranslation(words_to_plot, positions, np_screenshot, websocket):
-    formated_texts = []
-    for word_to_plot, position in zip(words_to_plot, positions):
-        (top_left, top_right, bottom_right, bottom_left) = position
-        width = int(bottom_right[0]) - int(top_left[0])
-        height = int(bottom_right[1]) - int(top_left[1])
-
-        # ToDo : if confidence >= params["confidence_threshold"]:
-
-        screenshot_zone = np_screenshot[int(top_left[1]):int(top_left[1]) + height,
-                          int(top_left[0]):int(top_left[0]) + width]
-        mean_rgb = screenshot_zone.reshape(-1, 3).mean(axis=0)
-
-        text_to_plot = {
-            "text": word_to_plot,
-            "position": {
-                "top_left_x": int(top_left[0]),
-                "top_left_y": int(top_left[1]),
-                "width": width,
-                "height": height},
-            "mean_rgb": mean_rgb.astype(int).tolist()
-        }
-        formated_texts.append(text_to_plot)
-
-    await websocket.send(json.dumps({"translation_to_plot": formated_texts}))
-
 async def loop_process(websocket):
+    surya_layout_model = load_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+    surya_processor = load_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+    det_model = load_model()
+    det_processor = load_processor()
+
     ocr_reader = EasyOCRReader(params["input_lang"])
     translator = Translator(params)
 
@@ -65,7 +53,8 @@ async def loop_process(websocket):
             translator.updateTranslator(params)
 
             if params["is_running"]:
-                np_screenshot = await capture_screen(sct, params, websocket)
+                pil_screenshot = await capture_screen(sct, params, websocket, return_format=Image.Image)
+                np_screenshot = np.flip(np.array(pil_screenshot, dtype=np.uint8)[:, :, :3], 2)
 
                 # Only update the translation if the detected image changed
                 # ToDo : This idea can be improved by detecting only which parts of the screen changed.
@@ -73,21 +62,33 @@ async def loop_process(websocket):
                 if current_screenshot.shape != np_screenshot.shape or not (current_screenshot == np_screenshot).all():
                     current_screenshot = np_screenshot
 
-                    res = ocr_reader.extractText(current_screenshot)
+                    line_predictions = batch_text_detection([pil_screenshot], det_model, det_processor)
+                    layout_predictions = batch_layout_detection([pil_screenshot], surya_layout_model, surya_processor, line_predictions)
 
-                    # await websocket.send(json.dumps({"clear_translation": True}))  # Only needed if we send the translation piece by piece
+                    formated_texts = []
+                    for bb in layout_predictions[0].bboxes:
+                        if bb.label not in ["Figure", "Picture", "Formula"]:
+                            x1, y1, x2, y2 = bb.polygon[0][0], bb.polygon[0][1], bb.polygon[2][0], bb.polygon[2][1]
+                            screenshot_zone = np_screenshot[y1:y2, x1:x2]
 
-                    if len(res) > 0:
-                        # ToDo : typo correction (e.g. si6ht -> sight, ive -> I've)
+                            res = ocr_reader.extractText(screenshot_zone, paragraph=False)
 
-                        detected_words = [str.lower(word) for _, word in res]
-                        detected_bounding_boxes = np.array([list(pos) for pos, _ in res])
+                            if len(res) > 0:
+                                detected_words = [str.lower(w) for box, w, conf in res]
 
-                        # ToDo : Send translation to the client line by line, instead of all at once
+                                word_separator = " "
+                                joined_words = word_separator.join(detected_words)
 
-                        detected_words_translation = [translator.translate(w) for w in detected_words]
+                                translation = translator.translate(joined_words)
 
-                        await sendTranslation(detected_words_translation, detected_bounding_boxes, np_screenshot, websocket)
+                                formated_texts.append({
+                                    "text": translation,
+                                    "box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
+                                    "mean_rgb": screenshot_zone.reshape(-1, 3).mean(axis=0).astype(int).tolist(),
+                                    "label": str(bb.label),
+                                })
+
+                    await websocket.send(json.dumps({"translation_to_plot": formated_texts}))
 
                 await asyncio.sleep(1 / params["fps"])
             else:

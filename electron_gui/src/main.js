@@ -25,7 +25,7 @@ function sendParametersConfig() {
     ws_client.send(JSON.stringify({ parameters_config: parameters_config }));
 }
 
-function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
+function connectWebSocketWithRetry(port, maxRetries = 20, retryDelay = 500) {
     let attempts = 0;
 
     function tryConnect() {
@@ -47,6 +47,10 @@ function connectWebSocketWithRetry(port, maxRetries = 10, retryDelay = 100) {
 
             if (event.hasOwnProperty("clear_translation")) {
                 overlayWindow.webContents.send("clear-translation")
+            }
+
+            if (event.hasOwnProperty("plot_bounding_boxes")) {
+                overlayWindow.webContents.send("plot-bounding-boxes", event.plot_bounding_boxes)
             }
 
             if (event.hasOwnProperty("translation_to_plot")) {
@@ -128,6 +132,8 @@ function createOverlayWindow(){
     // So if your Windows version is older than Windows 10 version 2004, please check the "flicker screen" option in advanced options menu.
     overlayWindow.setContentProtection(true)
 
+    // ToDo : If mouse is outside the window, set setIgnoreMouseEvents to false.
+
     // ToDo : Instead of looking at the alpha value, look for specific coordinates.
     // ToDo : No need to take screenshots anymore.
     // ToDo : When the overlay's control bar is hidden/shown, check for different coordinates.
@@ -140,7 +146,6 @@ function createOverlayWindow(){
         const point = screen.getCursorScreenPoint();
         const [x, y] = overlayWindow.getPosition();
         const [w, h] = overlayWindow.getSize();
-
         if (point.x > x && point.x < x + w && point.y > y && point.y < y + h) {
             updateIgnoreMouseEvents(point.x - x, point.y - y);
         }
@@ -152,7 +157,6 @@ function createOverlayWindow(){
             width: 1, height: 1,
         });
         const buffer = image.getBitmap();
-
         // Don't ignore mouse events if the alpha value of the pixel under the mouse is not transparent (i.e. != 0)
         overlayWindow.setIgnoreMouseEvents(!buffer[3]);
         // console.log("setIgnoreMouseEvents", !buffer[3]);

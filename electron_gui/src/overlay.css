@@ -109,3 +109,13 @@ body, html {
     flex-grow: 1;
     padding: 0 10px 0 10px; /* top | right | bottom | left */
 }
+
+.bounding_box_label {
+    position: absolute;
+    top: -15px;
+    left: -1px;
+    height: 15px;
+    font-size: 12px;
+    background-color: red;
+    text-align: left;
+}
