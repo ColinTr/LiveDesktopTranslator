@@ -9,7 +9,7 @@ const randomId = function(length) {
 };
 
 window.electronAPI.plotBoundingBoxes((bounding_boxes_to_plot) => {
-    // bounding_boxes_to_plot = JSON.parse(bounding_boxes_to_plot)
+    bounding_boxes_to_plot = JSON.parse(bounding_boxes_to_plot)
     const fragment = document.createDocumentFragment();
 
     bounding_boxes_to_plot.forEach(bounding_box => {

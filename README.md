@@ -4,7 +4,7 @@
 
 
 <p align="center">
-  ToDo short description
+  Proof of concept for a desktop application that translates on-screen elements based on optical character recognition (OCR).
 </p>
 
 <div align="center">
@@ -15,7 +15,23 @@
 
 ## 🔍 Overview
 
-ToDo
+While web pages can be easily translated using browser extensions, the textual elements of some applications cannot be easily extracted (e.g. video games, images, scanned documents, ...).
+The goal of this application is to 1) capture a portion of the screen, 2) recognize the text it contains, 3) translate it and finally 4) paint it back on the screen, all in real time.
+Currently, this application comes in the form of an overlay and implements [SuryaOCR](https://github.com/VikParuchuri/surya) for layout understanding, [EasyOCR](https://github.com/JaidedAI/EasyOCR) for optical character recognition and either [Argos Translate](https://github.com/argosopentech/argos-translate) for local translation or [MyMemory](https://mymemory.translated.net/doc/spec.php) for online translation. 
+
+Below is an example of translation from English to French by overlaying the application on top of a PDF:
+![Screenshot](readme_images/pdf_translation_example.png)
+
+This main limitation of this application is its ability to correctly understand the layout (i.e. should the recognized words be concatenated into a sentence or not).
+SuryaOCR, the layout understanding model currently in use, was trained on structured documents (mainly PDFs and newspapers) and does not work well in various scenarios such as algorithms, tables, game footage, captions, ... 
+
+## 🛠️ Development
+
+- [ ] Modal for adding/removing other input/output languages
+- [ ] Application packaging
+- [ ] Parameters save button
+- [ ] set updateIgnoreMouseEvents using coordinates instead of alpha value
+- [ ] Identify sub-tasks for specialized layout detection models (i.e. video game, outdoor, PDF, etc)
 
 
 ## ⚙️ Starting the app (for development)
@@ -99,4 +115,4 @@ You'll find the resulting application in a path similar to `electron_gui\out\liv
 
 ## ⚖️ License
 
-ToDo
+This code is released under the MIT license. See the LICENSE file for more information.
